@@ -672,9 +672,16 @@ export async function activate(api) {
     for (const storyboard of (milthm.storyboards ?? [])) {
       if (Number(storyboard.type) !== 0 || typeof storyboard.data !== 'string' || !storyboard.data) continue;
       if (storyboard === dimStoryboard) continue;
-      const basename = storyboard.data.replaceAll('\\', '/').split('/').at(-1);
-      const asset = findAsset(name => name.replaceAll('\\', '/').split('/').at(-1) === basename);
-      if (asset) entries.set(`res/${storyboard.data.replaceAll('\\', '/')}`, new Uint8Array(asset.bytes));
+      const data = storyboard.data.replaceAll('\\', '/');
+      const basename = data.split('/').at(-1);
+      const hasExtension = /\.[a-z0-9]+$/i.test(basename);
+      const asset = findAsset(name => {
+        const assetName = name.replaceAll('\\', '/').split('/').at(-1);
+        return assetName === basename || (!hasExtension && assetName.replace(/\.[a-z0-9]+$/i, '') === basename);
+      });
+      if (!asset) { warnings.push(`图片故事板「${storyboard.data}」在谱面包资源里找不到同名图片，zip 中缺少这张图`); continue; }
+      const entryName = hasExtension ? data : `${data}.${asset.name.split('.').at(-1) ?? 'png'}`;
+      entries.set(`res/${entryName}`, new Uint8Array(asset.bytes));
     }
     await downloadBlob(await zipBlob(entries), `${sanitizeFileName(milthm.meta.name)}.zip`);
     reportWarnings('Milthm 导出', warnings);

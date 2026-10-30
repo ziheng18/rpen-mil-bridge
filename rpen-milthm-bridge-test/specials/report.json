@@ -1,0 +1,102 @@
+{
+  "steps": [
+    {
+      "name": "mod",
+      "data": {
+        "loaded": "loaded",
+        "version": "0.7.0"
+      }
+    },
+    {
+      "name": "edit",
+      "data": {
+        "textures": [
+          "line.png",
+          "line.png",
+          "texture.png"
+        ],
+        "textEvents": 2
+      }
+    },
+    {
+      "name": "preview",
+      "data": {
+        "textures": [
+          "line.png",
+          "line.png",
+          "texture.png"
+        ],
+        "text": "HELLO"
+      }
+    },
+    {
+      "name": "export",
+      "data": {
+        "name": "specials test",
+        "entries": [
+          "chart.json",
+          "image.png",
+          "meta.json",
+          "res/texture.png"
+        ],
+        "warnings": [
+          "线 1：文字已导出为 1 个文字故事板（type 1）",
+          "线 2：判定线贴图「texture.png」已导出为图片故事板（type 0）；谱面包 zip 会自动打包到 res/texture.png，单独导出 chart.json 时需自备该图片",
+          "未找到唯一音频：谱面包内没有音频文件"
+        ]
+      }
+    }
+  ],
+  "exceptions": [],
+  "downloads": [
+    "specials test.zip"
+  ],
+  "result": {
+    "version": "0.7.0",
+    "zipName": "specials test.zip",
+    "entries": [
+      "chart.json",
+      "image.png",
+      "meta.json",
+      "res/texture.png"
+    ],
+    "exportedLines": 1,
+    "exportedLineIndexes": [
+      0
+    ],
+    "exportedLine0Notes": 1,
+    "textStoryboards": 1,
+    "textData": "HELLO",
+    "textLayer": 1,
+    "textBearersOk": true,
+    "textPositionX": 100,
+    "textRotation": 30,
+    "textWidth": 1.2173754000914494,
+    "textTransparencyStarts": [
+      {
+        "beat": 0,
+        "start": 0.5
+      },
+      {
+        "beat": 4,
+        "start": 0
+      }
+    ],
+    "pictureStoryboards": 1,
+    "pictureData": "texture.png",
+    "pictureBearersOk": true,
+    "picturePositionX": 200,
+    "pictureRotation": -30,
+    "pictureWidth": 1.4222222222222223,
+    "pictureColor": 169090815,
+    "previewText": "HELLO",
+    "textureInRes": true,
+    "textureIsPng": true,
+    "warnings": [
+      "线 1：文字已导出为 1 个文字故事板（type 1）",
+      "线 2：判定线贴图「texture.png」已导出为图片故事板（type 0）；谱面包 zip 会自动打包到 res/texture.png，单独导出 chart.json 时需自备该图片"
+    ],
+    "exceptions": 0,
+    "ok": true
+  }
+}

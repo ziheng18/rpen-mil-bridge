@@ -349,9 +349,121 @@ export function importMilthmChart(source, settings = {}) {
 /* ------------------------------------------------------------------ *
  * Export: RPE chart -> Milthm fmt=2
  * ------------------------------------------------------------------ */
+
+/* ---- special RPEN lines -> Milthm storyboards (text lines / line textures) ---- */
+// RPU source of truth:
+// - storyboards[] = { index, type, layer, data, animations }; animations use bearer_type = 2
+//   and bearer = storyboard.index (MilDataStructs.cs:111-121);
+// - type 0 = Picture: data = path under the zip's res/ folder, natural size = texture pixels
+//   mapped 1:1 to the 1920 design space (GameMain.cs:541-548, StartPlay.cs:222-235);
+// - type 1 = Text: data = the visible string, StoryboardPrefab Text = font 300 x child scale
+//   0.1125 canvas units ≈ 60.75 design units at 16:9 (Assets/Prefabs/StoryboardPrefab Text.prefab);
+// - storyboard transform (GameMain.cs:537-539): localPosition = MilToCanvas(PositionX, PositionY)
+//   + Relative, localScale = (Size * StoryBoardWidth, Size * StoryBoardHeight),
+//   localRotation = Euler(0, 0, Rotation) — i.e. Rotation is a plain Unity CCW angle, WITHOUT
+//   the line's 90 - rotation offset; layer 0/1 render behind chart objects, 2 in front.
+const STORYBOARD_TYPE = { PICTURE: 0, TEXT: 1 };
+const STORYBOARD_TEXT_FONT_DESIGN = 60.75;
+const TEXT_FONT_WORLD = 52; // RPEN drawLine() line-text font: 52 RPE world units (src/ui/preview.mjs)
+const storyboardTextScale = cfg => (TEXT_FONT_WORLD / cfg.scale) / STORYBOARD_TEXT_FONT_DESIGN;
+const storyboardPictureScale = cfg => 1 / cfg.scale;
+const storyboardClamp01 = value => Math.max(0, Math.min(1, Number(value) || 0));
+const storyboardBeatTime = beat => {
+  const whole = Math.floor(beat);
+  return [whole, Math.round((beat - whole) * 1000000000), 1000000000];
+};
+const storyboardEase = event => {
+  const ease = rpeEaseToMil(event?.easingType ?? 1);
+  return { type: ease.type, press: ease.press, isValueExp: false, cusValueExp: '',
+    clipLeft: Number(event?.easingLeft ?? 0), clipRight: Number(event?.easingRight ?? 1) };
+};
+const storyboardColorValue = value => {
+  const [r, g, b] = Array.isArray(value) ? value : [255, 255, 255];
+  const clamp = channel => Math.max(0, Math.min(255, Math.round(Number(channel) || 0)));
+  return ((clamp(r) << 24) | (clamp(g) << 16) | (clamp(b) << 8) | 255) >>> 0;
+};
+const storyboardBeat = time => {
+  const beat = beatOf(time);
+  return Number.isFinite(beat) ? beat : 0;
+};
+const sampleNumericEvents = (events, beat) => {
+  const list = (events ?? []).map(event => ({ event, start: storyboardBeat(event?.startTime), end: storyboardBeat(event?.endTime) }))
+    .sort((left, right) => left.start - right.start);
+  if (!list.length) return null;
+  let active = list[0];
+  for (const entry of list) if (entry.start <= beat) active = entry;
+  const startValue = Number(active.event.start);
+  const endValue = Number(active.event.end);
+  if (!(active.end > active.start)) return Number.isFinite(startValue) ? startValue : (Number.isFinite(endValue) ? endValue : null);
+  if (!Number.isFinite(startValue)) return Number.isFinite(endValue) ? endValue : null;
+  if (!Number.isFinite(endValue)) return startValue;
+  const progress = Math.max(0, Math.min(1, (beat - active.start) / (active.end - active.start)));
+  return startValue + (endValue - startValue) * progress;
+};
+const interpolateStoryboardText = (start, end, amount) => {
+  if (start === end) return start;
+  if (end.startsWith(start)) return start + [...end.slice(start.length)].slice(0, Math.floor([...end.slice(start.length)].length * amount)).join('');
+  if (start.startsWith(end)) return end + [...start.slice(end.length)].slice(0, Math.floor([...start.slice(end.length)].length * (1 - amount))).join('');
+  return end;
+};
+// RPEN line text: `line.extended.textEvents` animates `state.text`; a text event is visible from
+// its start until the next event starts (zero-duration events hold their value). Interpolated
+// strings act like typewriters, approximated here with up to 8 static storyboards.
+const textLineRuns = line => {
+  const events = (line?.extended?.textEvents ?? [])
+    .filter(event => event && typeof event.start === 'string' && typeof event.end === 'string')
+    .sort((left, right) => storyboardBeat(left.startTime) - storyboardBeat(right.startTime));
+  const runs = [];
+  for (let index = 0; index < events.length; index++) {
+    const event = events[index];
+    const start = storyboardBeat(event.startTime);
+    const next = index + 1 < events.length ? storyboardBeat(events[index + 1].startTime) : Infinity;
+    const startText = String(event.start);
+    const endText = String(event.end);
+    if (startText === endText) { runs.push({ start, end: next, text: startText }); continue; }
+    const animatedEnd = Math.min(next, storyboardBeat(event.endTime));
+    if (animatedEnd > start) {
+      const steps = Math.min(8, Math.max(2, Math.abs(endText.length - startText.length) || 2));
+      for (let step = 1; step <= steps; step++) runs.push({
+        start: start + (animatedEnd - start) * (step - 1) / steps,
+        end: start + (animatedEnd - start) * step / steps,
+        text: interpolateStoryboardText(startText, endText, step / steps),
+      });
+      if (next > animatedEnd) runs.push({ start: animatedEnd, end: next, text: endText });
+    } else runs.push({ start, end: next, text: endText || startText });
+  }
+  const merged = [];
+  for (const run of runs) {
+    const previous = merged.at(-1);
+    if (previous && previous.text === run.text && previous.end === run.start) previous.end = run.end;
+    else merged.push({ ...run });
+  }
+  return merged.filter(run => run.text.length > 0 && run.end > run.start);
+};
+const chartLastBeat = (chart, bpms) => {
+  let last = 0;
+  const bump = time => { last = Math.max(last, storyboardBeat(time)); };
+  for (const bpm of bpms) bump(bpm.time);
+  for (const line of (chart.judgeLineList ?? [])) {
+    for (const note of (line.notes ?? [])) { bump(note.startTime ?? note.time); bump(note.endTime ?? note.time); }
+    for (const layer of (line.eventLayers ?? [])) for (const events of Object.values(layer ?? {})) {
+      if (!Array.isArray(events)) continue;
+      for (const event of events) if (event && typeof event === 'object') { bump(event.startTime); bump(event.endTime); }
+    }
+    for (const type of ['scaleXEvents', 'scaleYEvents', 'colorEvents', 'textEvents']) {
+      for (const event of (line.extended?.[type] ?? [])) { bump(event.startTime); bump(event.endTime); }
+    }
+  }
+  for (const storyboard of (chart['x-milthm']?.storyboards ?? [])) {
+    for (const animation of (storyboard.animations ?? [])) { bump(animation.startTime); bump(animation.endTime); }
+  }
+  return last + 8;
+};
+
 export function exportMilthmChart(chart, settings = {}) {
   if (!chart || typeof chart !== 'object') throw new Error('没有可导出的谱面');
   const tr = makeTransform(settings);
+  const cfg = tr.cfg;
   const warnings = [];
   const root = chart['x-milthm'] && typeof chart['x-milthm'] === 'object' ? chart['x-milthm'] : {};
   const sourceMeta = root.meta && typeof root.meta === 'object' ? root.meta : {};
@@ -385,11 +497,14 @@ export function exportMilthmChart(chart, settings = {}) {
     ease: clone(raw.ease),
   });
 
-  const convertEvent = (event, milType, sourceType, mapper, bearer) => {
+  const convertEvent = (event, milType, sourceType, mapper, bearer, bearerType = MIL_BEARER.LINE) => {
     const stash = event?.['x-milthm'];
     // untouched imported event -> write original Milthm values back
     if (stash?.raw && Number(stash.raw.type) === sourceType && eventMatchesSnapshot(event, stash.mapped)) {
-      return rawToMil(stash.raw, MIL_BEARER.LINE, bearer);
+      const converted = rawToMil(stash.raw, bearerType, bearer);
+      converted.bearer_type = bearerType;
+      converted.bearer = bearer;
+      return converted;
     }
     // untouched synthetic baseline -> omit
     if (stash?.synthetic && eventMatchesSnapshot(event, stash.mapped)) return null;
@@ -399,7 +514,7 @@ export function exportMilthmChart(chart, settings = {}) {
     return nextIndex({
       startTime: clone(event.startTime), endTime: clone(event.endTime),
       type: milType, start: mapper(event.start), end: mapper(event.end),
-      bearer_type: MIL_BEARER.LINE, bearer,
+      bearer_type: bearerType, bearer,
       ease: {
         type: ease.type, press: ease.press, isValueExp: false, cusValueExp: '',
         clipLeft: Number(event.easingLeft ?? 0), clipRight: Number(event.easingRight ?? 1),
@@ -408,12 +523,27 @@ export function exportMilthmChart(chart, settings = {}) {
   };
 
   const lines = [];
+  const specials = [];
   const judgeLineList = Array.isArray(chart.judgeLineList) ? chart.judgeLineList : [];
   for (const [lineIndex, line] of judgeLineList.entries()) {
     const stash = line?.['x-milthm'] ?? {};
     const layers = Array.isArray(line?.eventLayers) && line.eventLayers.length ? line.eventLayers : [{}];
     if (layers.length > 1) warnings.push(`线 ${lineIndex} 有 ${layers.length} 个事件层：Milthm 单轨道无法表达叠加，已平铺导出（语义可能不同）`);
     const extended = line?.extended ?? {};
+    // RPEN special-event lines: text lines draw `extended.textEvents`, custom `line.Texture`
+    // lines draw an image — neither exists on a Milthm judge line, so export them as storyboards.
+    const textLine = (extended.textEvents ?? []).length > 0;
+    const customTexture = typeof line?.Texture === 'string' && line.Texture && line.Texture !== 'line.png' ? line.Texture : '';
+    const pictureLine = !textLine && Boolean(customTexture);
+    const noteCount = (line?.notes ?? []).length;
+    if ((textLine || pictureLine) && !line?.attachUI) {
+      specials.push({ lineIndex, line, kind: textLine ? 'text' : 'picture', texture: customTexture, hasNotes: noteCount > 0 });
+      if (!noteCount) {
+        if (Number(line?.father ?? -1) !== -1) warnings.push(`线 ${lineIndex}：${textLine ? '文本线' : '贴图线'}的父子线（father）在故事板中无法表达，位置按自身事件导出`);
+        continue; // the line itself is not a Milthm track
+      }
+      warnings.push(`线 ${lineIndex}：${textLine ? '文本线' : '贴图线'}带有 ${noteCount} 个音符，线仍按轨道导出（渲染器里线体也会显示）`);
+    }
 
     const notes = [];
     const noteAnimations = [];
@@ -477,7 +607,7 @@ export function exportMilthmChart(chart, settings = {}) {
       const unpaired = scaleYs.filter(event => !scaleXs.some(other =>
         timeEq(other.startTime, event.startTime) && numEq(other.start, event.start) && numEq(other.end, event.end)));
       if (unpaired.length) warnings.push('RPE scaleX / scaleY 不一致：Milthm 只有一个统一 Size，scaleY 的差异未导出');
-      for (const type of ['inclineEvents', 'textEvents', 'gifEvents', 'paintEvents']) {
+      for (const type of ['inclineEvents', 'gifEvents', 'paintEvents']) {
         if ((extended[type] ?? []).length) warnings.push(`RPEN extended.${type} 在 Milthm 中没有对应动画，未导出`);
       }
     }
@@ -493,10 +623,22 @@ export function exportMilthmChart(chart, settings = {}) {
     }
     if (Number(line?.father ?? -1) !== -1) warnings.push('RPEN 父子线（father）在 Milthm 中不存在，已忽略');
     if (Number(line?.bpmfactor ?? 1) !== 1) warnings.push('RPEN 线的 bpmfactor 在 Milthm 中不存在，已忽略');
-    if (line?.Texture && line.Texture !== 'line.png') warnings.push('RPEN 线贴图（Texture）在 Milthm 中不存在，已忽略');
 
     animations.sort((a, b) => beatOf(a.startTime) - beatOf(b.startTime));
     lines.push({ index: lineIndex, notes, animations });
+  }
+
+  // Storyboard-only lines are dropped from the line list; renumber the remaining tracks and
+  // their line-bound animations so the exported `index` values stay contiguous.
+  if (specials.some(special => !special.hasNotes)) {
+    const remap = new Map(lines.map((line, position) => [Number(line.index), position]));
+    for (const line of lines) {
+      for (const animation of (line.animations ?? [])) {
+        if (Number(animation.bearer_type) !== MIL_BEARER.LINE) continue;
+        if (remap.has(Number(animation.bearer))) animation.bearer = remap.get(Number(animation.bearer));
+      }
+      line.index = remap.get(Number(line.index)) ?? line.index;
+    }
   }
 
   if ((chart.blockAreaList ?? []).length) warnings.push('RPEN 噪域（blockAreaList）在 Milthm 中不存在，未导出');
@@ -510,6 +652,145 @@ export function exportMilthmChart(chart, settings = {}) {
         rawToMil(animation, Number(animation.bearer_type ?? MIL_BEARER.STORYBOARD), Number(animation.bearer ?? storyboard.index ?? 0)));
     }
     storyboards.push(storyboard);
+  }
+
+  // ---- role of RPEN special lines: text lines / judgement-line textures -> storyboards ----
+  if (specials.length) {
+    const lastBeat = chartLastBeat(chart, bpms);
+    let nextStoryboardIndex = storyboards.reduce((max, storyboard) => Math.max(max, Number(storyboard.index ?? 0) + 1), 0);
+    const storyboardAnimation = (type, bearer, startTime, endTime, start, end, ease) => nextIndex({
+      startTime: clone(startTime), endTime: clone(endTime), type, start, end,
+      bearer_type: MIL_BEARER.STORYBOARD, bearer,
+      ease: clone(ease ?? { type: 0, press: 0, isValueExp: false, cusValueExp: '', clipLeft: 0, clipRight: 1 }),
+    });
+    const transformAnimations = (line, kind, bearer) => {
+      const output = [];
+      const layer = line.eventLayers?.[0] ?? {};
+      const extended = line.extended ?? {};
+      const scaleFactor = kind === 'text' ? storyboardTextScale(cfg) : storyboardPictureScale(cfg);
+      const pushConverted = (event, milType, mapper) => {
+        const converted = convertEvent(event, milType, milType, mapper, bearer, MIL_BEARER.STORYBOARD);
+        if (converted) output.push(converted);
+      };
+      for (const event of (layer.moveXEvents ?? [])) pushConverted(event, MIL_ANIM.POSITION_X, tr.fromRpeX);
+      for (const event of (layer.moveYEvents ?? [])) pushConverted(event, MIL_ANIM.POSITION_Y, tr.fromRpeY);
+      for (const event of (layer.rotateEvents ?? [])) {
+        const raw = event?.['x-milthm']?.raw;
+        if (raw && Number(raw.type) === MIL_ANIM.ROTATION && eventMatchesSnapshot(event, event['x-milthm']?.mapped)) {
+          output.push(storyboardAnimation(MIL_ANIM.ROTATION, bearer, raw.startTime, raw.endTime,
+            90 - Number(raw.start), 90 - Number(raw.end), raw.ease));
+        } else {
+          output.push(storyboardAnimation(MIL_ANIM.ROTATION, bearer, event.startTime, event.endTime,
+            90 - tr.fromRpeRot(event.start), 90 - tr.fromRpeRot(event.end), storyboardEase(event)));
+        }
+      }
+      for (const [key, milType] of [['scaleXEvents', MIL_ANIM.STORYBOARD_WIDTH], ['scaleYEvents', MIL_ANIM.STORYBOARD_HEIGHT]]) {
+        for (const event of (extended[key] ?? [])) {
+          const raw = event?.['x-milthm']?.raw;
+          if (raw && Number(raw.type) === MIL_ANIM.SIZE && eventMatchesSnapshot(event, event['x-milthm']?.mapped)) {
+            output.push(storyboardAnimation(milType, bearer, raw.startTime, raw.endTime,
+              Number(raw.start) * scaleFactor, Number(raw.end) * scaleFactor, raw.ease));
+          } else {
+            output.push(storyboardAnimation(milType, bearer, event.startTime, event.endTime,
+              Number(event.start) * scaleFactor, Number(event.end) * scaleFactor, storyboardEase(event)));
+          }
+        }
+      }
+      for (const event of (extended.colorEvents ?? [])) {
+        const raw = event?.['x-milthm']?.raw;
+        if (raw && Number(raw.type) === MIL_ANIM.COLOR && eventMatchesSnapshot(event, event['x-milthm']?.mapped)) {
+          output.push(storyboardAnimation(MIL_ANIM.COLOR, bearer, raw.startTime, raw.endTime, Number(raw.start), Number(raw.end), raw.ease));
+        } else {
+          output.push(storyboardAnimation(MIL_ANIM.COLOR, bearer, event.startTime, event.endTime,
+            storyboardColorValue(event.start), storyboardColorValue(event.end), storyboardEase(event)));
+        }
+      }
+      // RPEN holds the first value before an event track's first event; Milthm storyboards fall
+      // back to their defaults, so extend the first keyframe back to beat 0.
+      const cover = type => {
+        const track = output.filter(animation => Number(animation.type) === type)
+          .sort((left, right) => storyboardBeat(left.startTime) - storyboardBeat(right.startTime));
+        if (track.length && storyboardBeat(track[0].startTime) > 0) {
+          output.push(storyboardAnimation(type, bearer, [0, 0, 1], clone(track[0].startTime), track[0].start, track[0].start, track[0].ease));
+        }
+        return track;
+      };
+      cover(MIL_ANIM.POSITION_X);
+      cover(MIL_ANIM.POSITION_Y);
+      cover(MIL_ANIM.ROTATION);
+      cover(MIL_ANIM.COLOR);
+      for (const [milType, type] of [[MIL_ANIM.STORYBOARD_WIDTH, 'width'], [MIL_ANIM.STORYBOARD_HEIGHT, 'height']]) {
+        const track = cover(milType);
+        // No scale track at all: the natural size differs between RPEN and the renderer, so emit
+        // the constant multiplier explicitly.
+        if (!track.length) output.push(storyboardAnimation(milType, bearer, [0, 0, 1], storyboardBeatTime(lastBeat), scaleFactor, scaleFactor, { type: 0, press: 0, isValueExp: false, cusValueExp: '', clipLeft: 0, clipRight: 1 }));
+      }
+      return output;
+    };
+    const lineAlphaEvents = line => (line?.['x-milthm']?.events?.lineAlpha ?? []).filter(event => !event?.['x-milthm']?.synthetic);
+    const transparencyAnimations = (line, bearer, run) => {
+      const output = [];
+      const alphaEvents = lineAlphaEvents(line);
+      const pushEvent = (startBeat, endBeat, startValue, endValue) => {
+        if (!(endBeat > startBeat)) return;
+        output.push(storyboardAnimation(MIL_ANIM.TRANSPARENCY, bearer, storyboardBeatTime(startBeat), storyboardBeatTime(endBeat),
+          storyboardClamp01(startValue), storyboardClamp01(endValue),
+          { type: 0, press: 0, isValueExp: false, cusValueExp: '', clipLeft: 0, clipRight: 1 }));
+      };
+      if (!run) {
+        for (const event of alphaEvents) output.push(storyboardAnimation(MIL_ANIM.TRANSPARENCY, bearer, event.startTime, event.endTime, Number(event.start), Number(event.end), event.ease));
+        // hold the first alpha keyframe back to beat 0 (RPEN behaviour)
+        const first = output.slice().sort((left, right) => storyboardBeat(left.startTime) - storyboardBeat(right.startTime))[0];
+        if (first && storyboardBeat(first.startTime) > 0) {
+          output.push(storyboardAnimation(MIL_ANIM.TRANSPARENCY, bearer, [0, 0, 1], clone(first.startTime), first.start, first.start, first.ease));
+        }
+        return output;
+      }
+      const start = run.start;
+      const end = Number.isFinite(run.end) ? run.end : lastBeat;
+      if (start > 0) pushEvent(0, start, 0, 0);
+      const cuts = new Set([start, end]);
+      for (const event of alphaEvents) {
+        const from = storyboardBeat(event.startTime), to = storyboardBeat(event.endTime);
+        if (from > start && from < end) cuts.add(from);
+        if (to > start && to < end) cuts.add(to);
+      }
+      const beats = [...cuts].sort((left, right) => left - right);
+      for (let index = 0; index < beats.length - 1; index++) {
+        const from = beats[index], to = beats[index + 1];
+        const fromValue = alphaEvents.length ? sampleNumericEvents(alphaEvents, from) : 1;
+        const toValue = alphaEvents.length ? sampleNumericEvents(alphaEvents, to) : 1;
+        pushEvent(from, to, fromValue ?? 1, toValue ?? 1);
+      }
+      if (Number.isFinite(run.end) && run.end < lastBeat) pushEvent(run.end, lastBeat, 0, 0);
+      return output;
+    };
+    for (const special of specials) {
+      if (special.kind === 'text') {
+        const runs = textLineRuns(special.line);
+        if (!runs.length) { warnings.push(`线 ${special.lineIndex}：文本事件为空，未生成文字故事板`); continue; }
+        const animated = (special.line.extended?.textEvents ?? []).some(event => String(event.start) !== String(event.end));
+        if (animated) warnings.push(`线 ${special.lineIndex}：文本动画（打字机）已按分段常量近似（最多 8 段）`);
+        const anchor = special.line.anchor ?? [0.5, 0.5];
+        if (Math.abs(Number(anchor[0]) - 0.5) > 1e-6 || Math.abs(Number(anchor[1]) - 0.5) > 1e-6) {
+          warnings.push(`线 ${special.lineIndex}：文本锚点 ${JSON.stringify(anchor)} 不是居中，故事板按居中导出（可能有偏移）`);
+        }
+        for (const run of runs) {
+          const index = nextStoryboardIndex++;
+          const animations = [...transformAnimations(special.line, 'text', index), ...transparencyAnimations(special.line, index, run)];
+          animations.sort((left, right) => beatOf(left.startTime) - beatOf(right.startTime));
+          storyboards.push({ index, type: STORYBOARD_TYPE.TEXT, layer: 1, data: run.text, animations });
+        }
+        warnings.push(`线 ${special.lineIndex}：文字已导出为 ${runs.length} 个文字故事板（type 1）`);
+      } else {
+        const data = String(special.texture).replaceAll('\\', '/').split('/').at(-1);
+        const index = nextStoryboardIndex++;
+        const animations = [...transformAnimations(special.line, 'picture', index), ...transparencyAnimations(special.line, index, null)];
+        animations.sort((left, right) => beatOf(left.startTime) - beatOf(right.startTime));
+        storyboards.push({ index, type: STORYBOARD_TYPE.PICTURE, layer: 1, data, animations });
+        warnings.push(`线 ${special.lineIndex}：判定线贴图「${data}」已导出为图片故事板（type 0）；谱面包 zip 会自动打包到 res/${data}，单独导出 chart.json 时需自备该图片`);
+      }
+    }
   }
 
   return {
@@ -531,7 +812,9 @@ export function normalizeLaneChart(chart, settings = {}) {
     const linePatch = {};
     if (Number(line.bpmfactor ?? 1) !== 1) { linePatch.bpmfactor = 1; lineChanged = true; }
     if (Number(line.father ?? -1) !== -1) { linePatch.father = -1; lineChanged = true; }
-    if (line.Texture && line.Texture !== 'line.png') { linePatch.Texture = 'line.png'; lineChanged = true; }
+    // Track lines keep the default line texture; note-less lines may keep a custom texture,
+    // which the preview draws natively and the export converts into a picture storyboard.
+    if (line.Texture && line.Texture !== 'line.png' && (line.notes ?? []).length > 0) { linePatch.Texture = 'line.png'; lineChanged = true; }
     let notes = line.notes;
     if (Array.isArray(line.notes)) {
       let notesChanged = false;
