@@ -184,6 +184,7 @@ export async function activate(api) {
       headAlpha: milEventTrack(semantics.headAlpha, cache.tempo, 1),
       wholeAlpha: milEventTrack(semantics.wholeAlpha, cache.tempo, 1),
       noteAlpha: new Map(),
+      noteFlow: new Map(),
     };
     cache.lines.set(line, tracks);
     return tracks;
@@ -195,6 +196,81 @@ export async function activate(api) {
     const track = events.length ? milEventTrack(events, cacheFor(chart).tempo, 1) : null;
     tracks.noteAlpha.set(note, track);
     return track;
+  };
+  const noteFlowTrack = (chart, line, note) => {
+    const tracks = lineTracks(chart, line);
+    if (tracks.noteFlow.has(note)) return tracks.noteFlow.get(note);
+    const events = (note?.['x-milthm']?.animations ?? []).filter(animation => Number(animation.type) === MIL_ANIM.FLOW_SPEED);
+    const track = events.length ? milEventTrack(events, cacheFor(chart).tempo, 1) : null;
+    tracks.noteFlow.set(note, track);
+    return track;
+  };
+
+  /* ---------------- preview flow speed: Milthm Speed(12) × FlowSpeed(5) ---------------- */
+  // RPU: note distance = Speed(12) 积分 × 120 × FLOW_SPEED(1.66) × 线FlowSpeed(5) × 音符FlowSpeed(5) × (675/960).
+  // The bridge stores Speed / FlowSpeed as separate tracks; for the preview we bake the product of the
+  // line tracks (Speed × 线FlowSpeed) into one speed track so RPEN's SpeedIntegral follows Milthm.
+  // Note-level FlowSpeed is applied per note in the noteState patch. Export is untouched.
+  const speedScaleValue = () => {
+    const value = Number(settings()['speed-scale']);
+    return Number.isFinite(value) && value > 0 ? value : 1.1671875;
+  };
+  const rawMilExtras = (line, type) => (line?.['x-milthm']?.rawExtras ?? []).filter(event => Number(event?.type) === Number(type));
+  const beatNumberOf = time => Number(time?.[0] ?? 0) + Number(time?.[1] ?? 0) / (Number(time?.[2]) || 1);
+  const previewTrack = (events, tempo, fallback = 1) => new EventTrack((events ?? []).map(event => ({
+    startTime: event.startTime, endTime: event.endTime, start: Number(event.start), end: Number(event.end),
+    easingType: Number(event.easingType ?? 1), easingLeft: Number(event.easingLeft ?? 0), easingRight: Number(event.easingRight ?? 1),
+    bezier: 0, bezierPoints: [0, 0, 1, 1],
+  })), tempo, 1, fallback);
+  const speedEventsRpe = (line, semantics) => {
+    if (semantics.speed?.length) return semantics.speed;
+    const raw = rawMilExtras(line, MIL_ANIM.SPEED);
+    if (!raw.length) return null;
+    const scale = speedScaleValue();
+    return raw.map(event => ({ startTime: event.startTime, endTime: event.endTime,
+      start: Number(event.start) * scale, end: Number(event.end) * scale,
+      easingType: 1, easingLeft: 0, easingRight: 1, bezier: 0, bezierPoints: [0, 0, 1, 1], linkgroup: 0 }));
+  };
+  const flowMultiplierEvents = (line, semantics) => {
+    // events whose sampled value is the raw (dimensionless) FlowSpeed(5) multiplier
+    if (semantics.speed?.length) return semantics.flowRaw?.length ? semantics.flowRaw : null;
+    const scale = speedScaleValue();
+    return (semantics.flowSpeed ?? []).map(event => ({ startTime: event.startTime, endTime: event.endTime,
+      start: Number(event.start) / scale, end: Number(event.end) / scale,
+      easingType: 1, easingLeft: 0, easingRight: 1, bezier: 0, bezierPoints: [0, 0, 1, 1], linkgroup: 0 }));
+  };
+  const composePreviewSpeedEvents = (speedEvents, flowEvents, tempo) => {
+    const speedTrack = previewTrack(speedEvents, tempo, 1);
+    const flowTrack = previewTrack(flowEvents, tempo, 1);
+    const cuts = new Set();
+    for (const event of [...speedEvents, ...flowEvents]) { cuts.add(beatNumberOf(event.startTime)); cuts.add(beatNumberOf(event.endTime)); }
+    const beats = [...cuts].sort((left, right) => left - right);
+    const composed = [];
+    const pushSegment = (startBeat, endBeat) => {
+      if (!(endBeat > startBeat)) return;
+      const startTime = fromNumber(startBeat), endTime = fromNumber(endBeat);
+      const startSeconds = tempo.seconds(startTime), endSeconds = tempo.seconds(endTime);
+      composed.push({
+        startTime, endTime,
+        start: speedTrack.value(startSeconds) * flowTrack.value(startSeconds),
+        end: speedTrack.value(endSeconds) * flowTrack.value(endSeconds),
+        easingType: 1, easingLeft: 0, easingRight: 1, bezier: 0, bezierPoints: [0, 0, 1, 1], linkgroup: 0,
+      });
+    };
+    for (let index = 0; index < beats.length - 1; index++) {
+      const start = beats[index], end = beats[index + 1];
+      const middle = (start + end) / 2;
+      pushSegment(start, middle);
+      pushSegment(middle, end);
+    }
+    return composed.length ? composed : speedEvents;
+  };
+  const previewSpeedEvents = (line, semantics, tempo) => {
+    const base = speedEventsRpe(line, semantics);
+    const flowEvents = flowMultiplierEvents(line, semantics);
+    if (base && flowEvents?.length) return composePreviewSpeedEvents(base, flowEvents, tempo);
+    if (base) return base;
+    return semantics.flowSpeed ?? [];
   };
   const dimTrack = chart => {
     const cache = cacheFor(chart);
@@ -320,7 +396,12 @@ export async function activate(api) {
       const layer = line?.eventLayers?.[0];
       if (!layer) continue;
       const injected = sceneSemanticArrays(line);
-      if (flow !== 1) injected.speedEvents = (injected.speedEvents ?? []).map(event => ({ ...event, start: Number(event.start) * flow, end: Number(event.end) * flow }));
+      // Preview speed follows Milthm's formula: bake Speed(12) × 线FlowSpeed(5) into one track
+      // (plus the preview-only global flow speed multiplier).
+      const previewSpeed = previewSpeedEvents(line, semanticEvents(line), tempo);
+      injected.speedEvents = flow === 1
+        ? previewSpeed
+        : previewSpeed.map(event => ({ ...event, start: Number(event.start) * flow, end: Number(event.end) * flow }));
       restores.push({ line, layer, extended: line.extended,
         arrays: { moveXEvents: layer.moveXEvents, moveYEvents: layer.moveYEvents, rotateEvents: layer.rotateEvents, alphaEvents: layer.alphaEvents, speedEvents: layer.speedEvents } });
       layer.moveXEvents = injected.moveXEvents;
@@ -366,6 +447,15 @@ export async function activate(api) {
     }
     const track = noteAlphaTrack(chart, this.line, entry.note);
     result.alpha *= whole * (track ? clamp01(track.value(seconds)) : 1);
+    // Milthm also multiplies each note's distance/length by its note-level FlowSpeed(5).
+    const flowTrack = noteFlowTrack(chart, this.line, entry.note);
+    if (flowTrack) {
+      const multiplier = Number(flowTrack.value(seconds));
+      if (Number.isFinite(multiplier)) {
+        result.y *= multiplier;
+        if (Number.isFinite(result.tail)) result.tail *= multiplier;
+      }
+    }
     return result;
   });
 

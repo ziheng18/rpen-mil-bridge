@@ -4,7 +4,7 @@
       "name": "mod",
       "data": {
         "loaded": "loaded",
-        "version": "0.6.7",
+        "version": "0.6.8",
         "setting": {
           "type": "number",
           "label": {
@@ -62,7 +62,7 @@
   ],
   "exceptions": [],
   "result": {
-    "version": "0.6.7",
+    "version": "0.6.8",
     "defaultSetting": 1.66,
     "settingRange": [
       0.8,
