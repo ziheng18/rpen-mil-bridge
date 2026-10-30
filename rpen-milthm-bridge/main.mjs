@@ -112,11 +112,21 @@ export async function activate(api) {
   let lastWarnings = [];
   const settings = () => {
     const keys = ['coord-scale', 'flip-y', 'offset-x', 'offset-y', 'rotation-offset', 'speed-scale', 'lane-lock', 'keep-extra',
-      'preview-tracks', 'preview-dim', 'dim-migrate', 'new-chart-mode'];
+      'preview-tracks', 'preview-dim', 'dim-migrate', 'new-chart-mode', 'renderer-flow-speed'];
     const result = {};
     for (const key of keys) { try { result[key] = api.settings.get(key); } catch { /* ignore */ } }
     return result;
   };
+  // Global flow speed of the renderer (RainPlayerUnity `GameMain.FLOW_SPEED`, default 1.66,
+  // settings slider range 0.8..2.4, also settable via ?flowSpeed=). The bridge bakes 1.66 into
+  // the default `speed-scale` (1.1671875 = 1.66 × 675/960), so the preview multiplier that makes
+  // "same number as the renderer" mean "same falling speed" is value / 1.66.
+  const RENDERER_FLOW_SPEED = 1.66;
+  const rendererFlowSpeed = () => {
+    const value = Number(settings()['renderer-flow-speed']);
+    return Number.isFinite(value) && value > 0 ? value : RENDERER_FLOW_SPEED;
+  };
+  const previewFlowMultiplier = () => rendererFlowSpeed() / RENDERER_FLOW_SPEED;
   const isMilthmChart = chart => chart?.['x-milthm']?.kind === 'milthm-fmt2';
   const reportWarnings = (label, warnings) => {
     const unique = [...new Set(warnings ?? [])];
@@ -283,9 +293,19 @@ export async function activate(api) {
   });
   api.patch(SceneRuntime.prototype, 'compile', previous => function (chart, tempo) {
     if (!isMilthmChart(chart)) {
+      this.__milthmFlow = undefined;
       const result = previous.call(this, chart, tempo);
       for (const runtime of this.lines) runtime.__milthmChart = null;
       return result;
+    }
+    // Preview-only global flow speed: the renderer applies FLOW_SPEED as a display multiplier
+    // (same number = same falling speed). When the value changes, rebuild the cached line
+    // runtimes so the injected speed events pick up the new multiplier immediately.
+    const flow = previewFlowMultiplier();
+    if (this.__milthmFlow !== flow) {
+      this.cache = new WeakMap();
+      this.chart = null;
+      this.__milthmFlow = flow;
     }
     // The native arrays mirror the *displayed* columns; the scene must always see the
     // semantic X/Y/rotation/speed/size lists. Swap them in just for the compile call so
@@ -295,6 +315,7 @@ export async function activate(api) {
       const layer = line?.eventLayers?.[0];
       if (!layer) continue;
       const injected = sceneSemanticArrays(line);
+      if (flow !== 1) injected.speedEvents = (injected.speedEvents ?? []).map(event => ({ ...event, start: Number(event.start) * flow, end: Number(event.end) * flow }));
       restores.push({ line, layer, extended: line.extended,
         arrays: { moveXEvents: layer.moveXEvents, moveYEvents: layer.moveYEvents, rotateEvents: layer.rotateEvents, alphaEvents: layer.alphaEvents, speedEvents: layer.speedEvents } });
       layer.moveXEvents = injected.moveXEvents;
@@ -314,6 +335,17 @@ export async function activate(api) {
     }
     for (const runtime of this.lines) runtime.__milthmChart = chart;
     return result;
+  });
+  // SceneRuntime.compile() only runs when the chart/tempo change; make the preview recompile when
+  // the global flow speed setting changes so the value takes effect immediately.
+  api.patch(Preview.prototype, 'draw', previous => function (...args) {
+    const chart = args[0];
+    if (isMilthmChart(chart) && this.scene && this.scene.__milthmFlow !== previewFlowMultiplier()) this.scene.chart = null;
+    return previous.apply(this, args);
+  });
+  api.on(`settings:${api.id}`, detail => {
+    if (detail?.key !== 'renderer-flow-speed') return;
+    try { editor.invalidate?.(); } catch { /* ignore */ }
   });
   api.patch(LineRuntime.prototype, 'noteState', previous => function (entry, state, seconds) {
     const result = previous.call(this, entry, state, seconds);

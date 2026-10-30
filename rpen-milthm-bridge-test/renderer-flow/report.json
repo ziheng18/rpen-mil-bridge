@@ -1,0 +1,86 @@
+{
+  "steps": [
+    {
+      "name": "mod",
+      "data": {
+        "loaded": "loaded",
+        "version": "0.6.6",
+        "setting": {
+          "type": "number",
+          "label": {
+            "zh-CN": "全局流速（预览，同播放器 FLOW_SPEED）",
+            "en-US": "Global flow speed (preview, same as player FLOW_SPEED)"
+          },
+          "description": {
+            "zh-CN": "与 RainPlayerUnity 的全局 FLOW_SPEED 同值同义：填 1.66 就是播放器默认 1.66，填多少预览落速就按多少算（播放器滑条范围 0.8–2.4）。只影响 RPEN 预览，不改谱面数据与导出。",
+            "en-US": "Same value and meaning as RainPlayerUnity global FLOW_SPEED: 1.66 matches the player default and the preview falling speed follows this number (player slider range 0.8-2.4). Preview only; chart data and export stay unchanged."
+          },
+          "default": 1.66,
+          "min": 0.8,
+          "max": 2.4,
+          "step": 0.01
+        },
+        "current": 1.66
+      }
+    },
+    {
+      "name": "baseline 1.66",
+      "data": {
+        "floor1": 1120.5,
+        "speeds": 1,
+        "visible": true
+      }
+    },
+    {
+      "name": "2.4 (x1.4458)",
+      "data": {
+        "floor1": 1620,
+        "speeds": 1,
+        "visible": true
+      }
+    },
+    {
+      "name": "0.83 (x0.5)",
+      "data": {
+        "floor1": 560.25,
+        "speeds": 1,
+        "visible": true
+      }
+    },
+    {
+      "name": "restore 1.66",
+      "data": {
+        "floor1": 1120.5,
+        "speeds": 1,
+        "visible": true
+      }
+    },
+    {
+      "name": "chart data unchanged",
+      "data": true
+    }
+  ],
+  "exceptions": [],
+  "result": {
+    "version": "0.6.6",
+    "defaultSetting": 1.66,
+    "settingRange": [
+      0.8,
+      2.4,
+      0.01
+    ],
+    "sceneFloors": {
+      "baseline": 1120.5,
+      "doubled": 1620,
+      "halved": 560.25,
+      "restored": 1120.5
+    },
+    "ratioFor2_4": 1.4457831325301205,
+    "ratioFor0_83": 0.5,
+    "restoredMatchesBaseline": true,
+    "chartDataUnchanged": true,
+    "previewVisible": true,
+    "exceptions": 0,
+    "ok": true
+  }
+}

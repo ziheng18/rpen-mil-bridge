@@ -6,14 +6,14 @@
     "zh-CN": "Milthm 自制谱桥接",
     "en-US": "Milthm fmt=2 Bridge"
   },
-  "version": "0.6.5",
+  "version": "0.6.6",
   "author": {
     "zh-CN": "可行性验证原型",
     "en-US": "Feasibility prototype"
   },
   "description": {
-    "zh-CN": "在 RPEN 中导入/编辑/导出 Milthm 自制谱（fmt=2），轨道式。v0.6.5：新建 Milthm 谱面的 Track 0 不透明度初始化（轨道整体 2 / 线身 8 / 线头 9 各一条 0 拍起 1 拍的 255 事件）；之后新增的线（1 号及以后）同样三条初始化事件、值为 0（透明）。v0.6.4：修复新增/批量增加判定线后「初始化事件列」死循环（判定线面板按钮点不动）；新增线即时转成 Milthm 轨道线。v0.6.3：不透明度事件（2/8/9/13）钩定状态跨提交保持。v0.6.2：缺失的线透明度轨道补「0 拍起 1 拍 0」+「最早事件拍 255」两条初始化，导出过滤。",
-    "en-US": "Import/edit/export Milthm fan charts (fmt=2) in RPEN. Track-based: each judge line = one Milthm track, notes locked to track center (positionX=0). v0.6.4 fixes an endless \"initialise event columns\" commit loop after adding plain judge lines to a Milthm chart (it froze the judge-line panel); added lines are converted to Milthm track lines immediately. Export commands produce Milthm chart.json / package zip."
+    "zh-CN": "在 RPEN 中导入/编辑/导出 Milthm 自制谱（fmt=2），轨道式。v0.6.6：新增「全局流速（预览，同播放器 FLOW_SPEED）」设置（默认 1.66，范围 0.8–2.4，与渲染器同值同义，只影响预览落速，不改谱面数据与导出）。v0.6.5：新建谱 Track 0 不透明度初始化 255（2/8/9 各一条 0 拍起 1 拍），新增线同三条但值为 0。v0.6.4：修复新增/批量增加判定线后「初始化事件列」死循环。v0.6.3：不透明度事件（2/8/9/13）钩定状态跨提交保持。v0.6.2：缺失线透明度轨道补「0 拍起 1 拍 0」+「最早事件拍 255」两条初始化，导出过滤。",
+    "en-US": "Import/edit/export Milthm fan charts (fmt=2) in RPEN. Track-based: each judge line = one Milthm track, notes locked to track center (positionX=0). v0.6.6 adds a preview-only global flow speed setting using the renderer FLOW_SPEED convention (default 1.66, range 0.8-2.4; same number = same falling speed; chart data and export unchanged). Export commands produce Milthm chart.json / package zip."
   },
   "entry": "main.mjs",
   "settings": {
@@ -78,6 +78,21 @@
       "default": 1.1671875,
       "min": 0.01,
       "max": 100,
+      "step": 0.01
+    },
+    "renderer-flow-speed": {
+      "type": "number",
+      "label": {
+        "zh-CN": "全局流速（预览，同播放器 FLOW_SPEED）",
+        "en-US": "Global flow speed (preview, same as player FLOW_SPEED)"
+      },
+      "description": {
+        "zh-CN": "与 RainPlayerUnity 的全局 FLOW_SPEED 同值同义：填 1.66 就是播放器默认 1.66，填多少预览落速就按多少算（播放器滑条范围 0.8–2.4）。只影响 RPEN 预览，不改谱面数据与导出。",
+        "en-US": "Same value and meaning as RainPlayerUnity global FLOW_SPEED: 1.66 matches the player default and the preview falling speed follows this number (player slider range 0.8-2.4). Preview only; chart data and export stay unchanged."
+      },
+      "default": 1.66,
+      "min": 0.8,
+      "max": 2.4,
       "step": 0.01
     },
     "lane-lock": {
