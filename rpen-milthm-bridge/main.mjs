@@ -10,6 +10,7 @@ import {
 import {
   DEFAULT_COLUMNS, COLUMN_LABELS, COLUMN_LABELS_FULL, SLOT_CANDIDATES, semanticEvents, chartColumns,
   ensureChartColumns, syncMilthmColumns, remapColumns, buildMilthmExportChart, sceneSemanticArrays,
+  milthmEventTypeLabels,
 } from './columns.mjs';
 
 const MOD_ID = 'milthm-fmt2-bridge';
@@ -102,6 +103,7 @@ export async function activate(api) {
     beat: await api.importInternal('core/beat.mjs'),
     archive: await api.importInternal('platform/archive.mjs').catch(() => null),
     files: await api.importInternal('platform/files.mjs').catch(() => null),
+    multiEdit: await api.importInternal('application/multi-edit.mjs').catch(() => null),
   };
   const { TempoMap } = internals.tempo;
   const { EventTrack } = internals.events;
@@ -1112,6 +1114,54 @@ export async function activate(api) {
     columnOverlay?.remove();
   });
 
+  /* ---------------- 多线编辑：事件类型下拉适配 Milthm 语义列 ---------------- */
+  // RPEN's 多线编辑 panel lists native RPE event types (X / Y / 旋转 / 不透明度 / 速度 / 缩放X /
+  // 缩放Y / 着色器 / 颜色 / 文本). On a Milthm chart those native columns are the Milthm display
+  // slots, so relabel them with the semantic channel they currently edit (e.g. 线体不透明度 /
+  // 整体不透明度 / 流速倍率 / 轨道大小 / 颜色) and drop 着色器, which has no Milthm meaning.
+  // Option values stay the native event-list keys, so the panel's apply pipeline is untouched;
+  // 缩放X/缩放Y edits are adopted into the single Milthm Size(3) channel by syncMilthmColumns().
+  const multiEditTypeOptions = () => isMilthmChart(editor.chart)
+    ? milthmEventTypeLabels(chartColumns(editor.chart))
+    : (internals.multiEdit?.EVENT_BATCH_TYPES ?? null);
+  const adaptMultiEditTypes = () => {
+    const panel = editor.multiEdit;
+    const root = panel?.root;
+    if (!root || panel.kind !== 'events') return;
+    // The first adaptation removes the native 着色器 option, so remember the filter select itself
+    // (the panel rebuilds it on every open()).
+    const filter = root.querySelector('select[data-milthm-event-filter]')
+      ?? [...root.querySelectorAll('select')].find(select => [...select.options].some(option => option.value === 'paintEvents'));
+    if (!filter) return;
+    const options = multiEditTypeOptions();
+    if (!options?.length) return;
+    const signature = options.map(([value, label]) => `${value}=${label}`).join('|');
+    if (filter.dataset.milthmEventTypes === signature) return;
+    const previous = filter.value;
+    filter.replaceChildren(...options.map(([value, label]) => new Option(label, value)));
+    filter.value = options.some(([value]) => value === previous) ? previous : 'all';
+    filter.dataset.milthmEventTypes = signature;
+    filter.dataset.milthmEventFilter = '1';
+    filter.title = isMilthmChart(editor.chart) ? 'Milthm 事件类型：标签对应当前事件列映射' : '';
+  };
+  // NOTE: keep the "already patched" flag in this activation scope, not on the panel object:
+  // the panel instance is shared across disable/enable cycles of the mod, and a stale marker on it
+  // would make a re-enabled mod skip patching (api.patch disposals are already restored on unload).
+  let multiEditPatched = false;
+  const patchMultiEditPanel = () => {
+    const panel = editor.multiEdit;
+    if (!panel || multiEditPatched) return;
+    multiEditPatched = true;
+    for (const method of ['open', 'sync']) {
+      api.patch(panel, method, previous => function (...args) {
+        const result = previous.apply(this, args);
+        try { adaptMultiEditTypes(); } catch (error) { api.log('适配多线编辑事件类型下拉失败', error); }
+        return result;
+      });
+    }
+  };
+  patchMultiEditPanel();
+
   /* ---------------- semantic columns: initialise once per chart ---------------- */
   const ensuredCharts = new WeakSet();
   const maybeEnsureColumns = async () => {
@@ -1306,6 +1356,7 @@ export async function activate(api) {
     updateColumnOverlay();
     renderExCheckbox?.();
     maybeEnsureColumns().catch(() => {});
+    try { adaptMultiEditTypes(); } catch (error) { api.log('适配多线编辑事件类型下拉失败', error); }
   }, 400);
   api.dispose(() => clearInterval(chartPoll));
 
@@ -1316,6 +1367,7 @@ export async function activate(api) {
     maybeEnsureColumns().catch(() => {});
     maybeBindMedia().catch(error => api.log('Milthm 媒体绑定失败', error));
     maybeMigrateDim().catch(error => api.log('背景明暗迁移失败', error));
+    try { adaptMultiEditTypes(); } catch (error) { api.log('适配多线编辑事件类型下拉失败', error); }
   });
   api.on('editor:state', () => {
     updateColumnOverlay();

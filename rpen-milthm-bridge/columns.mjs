@@ -27,6 +27,30 @@ const FLOAT_CANDIDATES = ['x', 'y', 'rotate', 'flowSpeed', 'size', 'bodyAlpha', 
 const ALPHA_CANDIDATES = ['lineAlpha', 'bodyAlpha', 'headAlpha', 'wholeAlpha'];
 export const SLOT_CANDIDATES = [FLOAT_CANDIDATES, FLOAT_CANDIDATES, FLOAT_CANDIDATES, ALPHA_CANDIDATES, FLOAT_CANDIDATES];
 
+/**
+ * Options for RPEN's 多线编辑 "事件类型" dropdown while a Milthm chart is active.
+ * RPEN's native 5 event columns are the Milthm display slots; their labels are replaced by the
+ * semantic channel currently mapped to that slot (e.g. the alpha column edits 线体/线头/整体
+ * transparency depending on `columns[3]`). The extended scaleX/scaleY columns map to Milthm's
+ * single Size(3) channel and colorEvents to Color(22); shader (paintEvents) has no Milthm meaning
+ * and is omitted.
+ */
+export function milthmEventTypeLabels(columns = DEFAULT_COLUMNS) {
+  const label = key => COLUMN_LABELS_FULL[key] ?? COLUMN_LABELS[key] ?? key;
+  return [
+    ['all', '全部'],
+    ['moveXEvents', label(columns[0] ?? 'x')],
+    ['moveYEvents', label(columns[1] ?? 'y')],
+    ['rotateEvents', label(columns[2] ?? 'rotate')],
+    ['alphaEvents', label(columns[3] ?? 'bodyAlpha')],
+    ['speedEvents', label(columns[4] ?? 'flowSpeed')],
+    ['scaleXEvents', '轨道大小·X（Size 3）'],
+    ['scaleYEvents', '轨道大小·Y（Size 3）'],
+    ['colorEvents', '轨道颜色（Color 22）'],
+    ['textEvents', '轨道文字（文本事件）'],
+  ];
+}
+
 export const MIL_ANIM_TYPES = {
   lineAlpha: MIL_ANIM.TRANSPARENCY,
   bodyAlpha: MIL_ANIM.LINE_BODY_TRANSPARENCY,
@@ -368,6 +392,9 @@ export function ensureChartColumns(chart) {
     const carriers = buildCarrierArrays(semantics, columns);
     writeCarriers(line, carriers);
     line['x-milthm'].applied = carriers.map(signature);
+    // Keep the extended scale view in sync with Milthm's single Size(3) channel.
+    line.extended = { ...(line.extended ?? {}), scaleXEvents: cloneEvents(semantics.size ?? []), scaleYEvents: cloneEvents(semantics.size ?? []) };
+    line['x-milthm'].appliedSize = signature(semantics.size ?? []);
   }
   return next;
 }
@@ -388,6 +415,29 @@ export function syncMilthmColumns(chart) {
     if (semantics.legacy?.length) {
       // v0.4 charts kept Milthm Transparency(2) line events as an uneditable legacy list.
       semantics = { ...semantics, lineAlpha: [...(semantics.lineAlpha ?? []), ...rpeEventsToLineAlphaRaw(semantics.legacy)], legacy: [] };
+    }
+    // Milthm has a single Size(3) track, mirrored into RPEN's extended scaleX/scaleY columns.
+    // RPEN's multi-line edit (and the extended event view) can edit those native arrays directly,
+    // so adopt their changes back into the semantic size list before mirroring them again.
+    // `stash.appliedSize` remembers the last mirror so an unchanged array is never re-adopted
+    // (important when RPEN's speed column itself carries the size semantics).
+    const extended = line.extended ?? {};
+    const scaleX = extended.scaleXEvents ?? [];
+    const scaleY = extended.scaleYEvents ?? [];
+    if (Array.isArray(semantics.size) && columns[4] !== 'size') {
+      const sizeSignature = signature(semantics.size);
+      const previousMirror = stash.appliedSize;
+      const xChanged = previousMirror !== undefined ? signature(scaleX) !== previousMirror : signature(scaleX) !== sizeSignature;
+      const yChanged = previousMirror !== undefined ? signature(scaleY) !== previousMirror : signature(scaleY) !== sizeSignature;
+      if (xChanged || yChanged) semantics.size = cloneEvents(xChanged ? scaleX : scaleY);
+      const sizeMirror = cloneEvents(semantics.size);
+      line.extended = { ...extended, scaleXEvents: sizeMirror, scaleYEvents: cloneEvents(semantics.size) };
+      stash.appliedSize = signature(semantics.size);
+    } else {
+      // Size(3) currently lives in one of RPEN's native event columns: mirror it to the extended view.
+      const sizeMirror = cloneEvents(semantics.size ?? []);
+      line.extended = { ...extended, scaleXEvents: sizeMirror, scaleYEvents: cloneEvents(semantics.size ?? []) };
+      stash.appliedSize = signature(semantics.size ?? []);
     }
     const carriers = buildCarrierArrays(semantics, columns);
     writeCarriers(line, carriers);
@@ -473,6 +523,7 @@ export function buildMilthmExportChart(chart) {
     stash.rawExtras = [...(stash.rawExtras ?? []), ...lineAlphaRaw, ...legacyRaw];
     stash.events = semantics;
     delete stash.applied;
+    delete stash.appliedSize;
   }
   return next;
 }

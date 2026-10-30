@@ -1,0 +1,171 @@
+{
+  "steps": [
+    {
+      "name": "mod",
+      "data": {
+        "loaded": "loaded",
+        "version": "0.7.2",
+        "files": 8
+      }
+    },
+    {
+      "name": "open-panel",
+      "data": {
+        "kind": "events",
+        "columns": [
+          "x",
+          "y",
+          "rotate",
+          "bodyAlpha",
+          "flowSpeed"
+        ]
+      }
+    },
+    {
+      "name": "dropdown-default-columns",
+      "data": {
+        "value": "all",
+        "title": "Milthm 事件类型：标签对应当前事件列映射",
+        "options": [
+          {
+            "value": "all",
+            "label": "全部"
+          },
+          {
+            "value": "moveXEvents",
+            "label": "X 坐标"
+          },
+          {
+            "value": "moveYEvents",
+            "label": "Y 坐标"
+          },
+          {
+            "value": "rotateEvents",
+            "label": "旋转"
+          },
+          {
+            "value": "alphaEvents",
+            "label": "线体不透明度（LineBodyTransparency 8）"
+          },
+          {
+            "value": "speedEvents",
+            "label": "流速倍率"
+          },
+          {
+            "value": "scaleXEvents",
+            "label": "轨道大小·X（Size 3）"
+          },
+          {
+            "value": "scaleYEvents",
+            "label": "轨道大小·Y（Size 3）"
+          },
+          {
+            "value": "colorEvents",
+            "label": "轨道颜色（Color 22）"
+          },
+          {
+            "value": "textEvents",
+            "label": "轨道文字（文本事件）"
+          }
+        ]
+      }
+    },
+    {
+      "name": "remap",
+      "data": {
+        "sentColumns": [
+          "x",
+          "y",
+          "rotate",
+          "lineAlpha",
+          "flowSpeed"
+        ]
+      }
+    },
+    {
+      "name": "dropdown-remapped-columns",
+      "data": {
+        "value": "all",
+        "title": "Milthm 事件类型：标签对应当前事件列映射",
+        "options": [
+          {
+            "value": "all",
+            "label": "全部"
+          },
+          {
+            "value": "moveXEvents",
+            "label": "X 坐标"
+          },
+          {
+            "value": "moveYEvents",
+            "label": "Y 坐标"
+          },
+          {
+            "value": "rotateEvents",
+            "label": "旋转"
+          },
+          {
+            "value": "alphaEvents",
+            "label": "轨道整体不透明度（线头+线身，Transparency 2）"
+          },
+          {
+            "value": "speedEvents",
+            "label": "流速倍率"
+          },
+          {
+            "value": "scaleXEvents",
+            "label": "轨道大小·X（Size 3）"
+          },
+          {
+            "value": "scaleYEvents",
+            "label": "轨道大小·Y（Size 3）"
+          },
+          {
+            "value": "colorEvents",
+            "label": "轨道颜色（Color 22）"
+          },
+          {
+            "value": "textEvents",
+            "label": "轨道文字（文本事件）"
+          }
+        ]
+      }
+    }
+  ],
+  "exceptions": [],
+  "console": [],
+  "result": {
+    "version": "0.7.2",
+    "defaultLabels": [
+      "全部",
+      "X 坐标",
+      "Y 坐标",
+      "旋转",
+      "线体不透明度（LineBodyTransparency 8）",
+      "流速倍率",
+      "轨道大小·X（Size 3）",
+      "轨道大小·Y（Size 3）",
+      "轨道颜色（Color 22）",
+      "轨道文字（文本事件）"
+    ],
+    "defaultKeys": [
+      "all",
+      "moveXEvents",
+      "moveYEvents",
+      "rotateEvents",
+      "alphaEvents",
+      "speedEvents",
+      "scaleXEvents",
+      "scaleYEvents",
+      "colorEvents",
+      "textEvents"
+    ],
+    "defaultMatches": true,
+    "paintHiddenInitially": true,
+    "remappedAlphaLabel": "轨道整体不透明度（线头+线身，Transparency 2）",
+    "remappedLabelOk": true,
+    "paintHiddenAfterRemap": true,
+    "exceptions": 0,
+    "ok": true
+  }
+}

@@ -1,0 +1,130 @@
+// Live probe: 多线编辑 event-type dropdown is adapted to Milthm semantics.
+// RPEN's 多线编辑 panel normally lists native RPE event types; for a Milthm chart the labels must
+// follow the current column mapping (线体/线头/整体不透明度、流速倍率、轨道大小、颜色、文字) and the
+// shader type (no Milthm meaning) must be hidden. Option values stay native event keys, so the
+// apply pipeline is unchanged; 缩放X/缩放Y edits are adopted into Milthm Size(3) by
+// syncMilthmColumns (covered offline in multi-edit-test.mjs).
+// Requires RPEN on :4173 and headless Edge CDP on :9333.
+import fs from 'node:fs';
+import path from 'node:path';
+
+const CDP = 9333;
+const PAGE = 'http://127.0.0.1:4173/';
+const WORK = 'E:\\File\\deepseek harness\\mil';
+const OUT = path.join(WORK, 'rpen-milthm-bridge-test', 'multi-edit');
+const MOD = path.join(WORK, 'rpen-milthm-bridge', 'milthm-fmt2-bridge.rpenmod');
+const CHART_ZIP = fs.readdirSync(WORK).filter(name => /^Class.Memories\.zip$/i.test(name)).map(name => path.join(WORK, name))[0];
+fs.rmSync(OUT, { recursive: true, force: true }); fs.mkdirSync(OUT, { recursive: true });
+
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+const fetchJson = async (url, options) => JSON.parse(await (await fetch(url, options)).text());
+const target = await fetchJson(`http://127.0.0.1:${CDP}/json/new?${encodeURIComponent(PAGE)}`, { method: 'PUT' });
+const ws = new WebSocket(target.webSocketDebuggerUrl);
+const pending = new Map(); let messageId = 0;
+const exceptions = [];
+const consoleMessages = [];
+function send(method, params = {}) { return new Promise((resolve, reject) => { const id = ++messageId; pending.set(id, { resolve, reject }); ws.send(JSON.stringify({ id, method, params })); }); }
+ws.onmessage = event => {
+  const message = JSON.parse(event.data);
+  if (message.id && pending.has(message.id)) { const entry = pending.get(message.id); pending.delete(message.id); message.error ? entry.reject(new Error(JSON.stringify(message.error))) : entry.resolve(message.result); return; }
+  if (message.method === 'Runtime.exceptionThrown') exceptions.push((message.params.exceptionDetails?.exception?.description ?? message.params.exceptionDetails?.text ?? '').slice(0, 500));
+  if (message.method === 'Runtime.consoleAPICalled') consoleMessages.push((message.params.args ?? []).map(arg => arg.value ?? arg.description ?? '').join(' ').slice(0, 400));
+};
+await new Promise((resolve, reject) => { ws.onopen = resolve; ws.onerror = () => reject(new Error('ws error')); });
+await send('Runtime.enable'); await send('Log.enable'); await send('DOM.enable'); await send('Page.enable');
+await send('Emulation.setDeviceMetricsOverride', { width: 1400, height: 900, deviceScaleFactor: 1, mobile: false });
+const evaluate = async expression => { const r = await send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true }); if (r.exceptionDetails) throw new Error(r.exceptionDetails.exception?.description ?? r.exceptionDetails.text); return r.result?.value; };
+const waitFor = async (expression, timeout = 120000, label = 'wait') => { const s = Date.now(); while (Date.now() - s < timeout) { try { const value = await evaluate(expression); if (value) return value; } catch { } await sleep(300); } throw new Error('timeout: ' + label); };
+const report = { steps: [], exceptions, console: consoleMessages };
+const step = (name, data) => { report.steps.push({ name, data }); console.log('STEP', name, JSON.stringify(data).slice(0, 1800)); };
+const FIND_FILTER = `[...(document.querySelector('#multi-editor')?.querySelectorAll('select') ?? [])].find(select => select.dataset.milthmEventFilter === '1' || [...select.options].some(option => option.value === 'paintEvents'))`;
+const READ_OPTIONS = `(() => {
+  const filter = ${FIND_FILTER};
+  if (!filter) return null;
+  return { value: filter.value, title: filter.title, options: [...filter.options].map(option => ({ value: option.value, label: option.textContent })) };
+})()`;
+const EXPECTED = ['全部', 'X 坐标', 'Y 坐标', '旋转', '线体不透明度（LineBodyTransparency 8）', '流速倍率',
+  '轨道大小·X（Size 3）', '轨道大小·Y（Size 3）', '轨道颜色（Color 22）', '轨道文字（文本事件）'];
+const hasPaint = options => options.some(option => option.value === 'paintEvents');
+const labelsOf = options => options.map(option => option.label);
+const keysOf = options => options.map(option => option.value);
+
+try {
+  await waitFor(`(async () => { if (!window.rpenMods?.manager) return null; await window.rpenMods.manager.ready; return true; })()`);
+  const modBase64 = fs.readFileSync(MOD).toString('base64');
+  step('mod', await evaluate(`(async () => {
+    const manager = window.rpenMods.manager;
+    window.confirm = () => true; manager.review = async () => true;
+    // the browser profile may still have the mod enabled from an earlier probe run: unload it first
+    if (manager.runtime.loaded.has('milthm-fmt2-bridge')) await manager.disable('milthm-fmt2-bridge');
+    const bytes = Uint8Array.from(atob(${JSON.stringify(modBase64)}), c => c.charCodeAt(0));
+    await manager.importFiles([new File([bytes], 'milthm-fmt2-bridge.rpenmod')]);
+    await manager.enable('milthm-fmt2-bridge');
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    const record = manager.records.get('milthm-fmt2-bridge');
+    const state = manager.runtime.loaded.get('milthm-fmt2-bridge');
+    return { loaded: state?.status, version: record?.manifest?.version, files: state?.api?.package?.files?.()?.length ?? null };
+  })()`));
+
+  const doc = await send('DOM.getDocument', { depth: -1, pierce: true });
+  const input = await send('DOM.querySelector', { nodeId: doc.root.nodeId, selector: '#file-input' });
+  await send('DOM.setFileInputFiles', { nodeId: input.nodeId, files: [CHART_ZIP] });
+  await waitFor(`(() => { const chart = window.rpenMods.editor?.chart; return chart?.['x-milthm']?.columns && chart.judgeLineList?.length === 19 ? true : null; })()`, 120000, 'import');
+
+  // open RPEN's 多线编辑 panel on the events kind and read the adapted dropdown
+  step('open-panel', await evaluate(`(() => {
+    const editor = window.rpenMods.editor;
+    editor.multiEdit.open('events');
+    return { kind: editor.multiEdit.kind, columns: editor.chart['x-milthm'].columns.slice() };
+  })()`));
+  await waitFor(`(() => { const filter = ${FIND_FILTER}; return Boolean(filter); })()`, 10000, 'panel dropdown');
+  const initial = await evaluate(READ_OPTIONS);
+  step('dropdown-default-columns', initial);
+
+  // remap the alpha column to 轨道整体不透明度 (Transparency 2); the already-open panel must follow
+  step('remap', await evaluate(`(() => {
+    const editor = window.rpenMods.editor;
+    const next = structuredClone(editor.chart);
+    next['x-milthm'].columns = ['x', 'y', 'rotate', 'lineAlpha', 'flowSpeed'];
+    editor.commit('probe multi-edit columns', next);
+    return { sentColumns: next['x-milthm'].columns.slice() };
+  })()`));
+  await waitFor(`(() => {
+    const filter = ${FIND_FILTER};
+    const alpha = [...(filter?.options ?? [])].find(option => option.value === 'alphaEvents');
+    return alpha && alpha.textContent.includes('轨道整体不透明度') ? true : null;
+  })()`, 10000, 'alpha label follows remap');
+  const remapped = await evaluate(READ_OPTIONS);
+  step('dropdown-remapped-columns', remapped);
+
+  const result = {
+    version: report.steps.find(entry => entry.name === 'mod')?.data?.version,
+    defaultLabels: labelsOf(initial?.options ?? []),
+    defaultKeys: keysOf(initial?.options ?? []),
+    defaultMatches: JSON.stringify(labelsOf(initial?.options ?? [])) === JSON.stringify(EXPECTED),
+    paintHiddenInitially: !hasPaint(initial?.options ?? []),
+    remappedAlphaLabel: (remapped?.options ?? []).find(option => option.value === 'alphaEvents')?.label ?? null,
+    remappedLabelOk: (remapped?.options ?? []).find(option => option.value === 'alphaEvents')?.label === '轨道整体不透明度（线头+线身，Transparency 2）',
+    paintHiddenAfterRemap: !hasPaint(remapped?.options ?? []),
+    exceptions: exceptions.length,
+  };
+  result.ok = Boolean(result.version) && result.defaultMatches && result.paintHiddenInitially
+    && result.remappedLabelOk && result.paintHiddenAfterRemap && result.exceptions === 0;
+  // show the panel in the editor (the multi pane) so the screenshot proves the dropdown labels
+  await evaluate(`(() => { try { window.rpenMods.editor.activatePane('multi'); } catch (error) { /* ignore */ } return true; })()`);
+  await sleep(600);
+  const screenshot = await send('Page.captureScreenshot', { format: 'png' });
+  fs.writeFileSync(path.join(OUT, 'multi-edit-panel.png'), Buffer.from(screenshot.data, 'base64'));
+  report.result = result;
+  fs.writeFileSync(path.join(OUT, 'report.json'), JSON.stringify(report, null, 2));
+  console.log('RESULT', JSON.stringify(result, null, 1));
+  if (!result.ok) process.exitCode = 1;
+} catch (error) {
+  report.error = String(error?.stack ?? error);
+  fs.mkdirSync(OUT, { recursive: true });
+  fs.writeFileSync(path.join(OUT, 'report.json'), JSON.stringify(report, null, 2));
+  console.log('PROBE ERROR', report.error);
+  process.exitCode = 1;
+} finally {
+  ws.close();
+}

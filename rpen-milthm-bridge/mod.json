@@ -6,14 +6,14 @@
     "zh-CN": "Milthm 自制谱桥接",
     "en-US": "Milthm fmt=2 Bridge"
   },
-  "version": "0.7.1",
+  "version": "0.7.2",
   "author": {
     "zh-CN": "可行性验证原型",
     "en-US": "Feasibility prototype"
   },
   "description": {
-    "zh-CN": "在 RPEN 中导入/编辑/导出 Milthm 自制谱（fmt=2），轨道式。v0.7.1：模组启用后把 RPEN 文字字体换成随包分发的 ChillRoundF（第三方 OFL-1.1 字体，许可证与版权声明随包 fonts/OFL.txt + fonts/FONT-NOTICE.txt）——覆盖 RPE / RPEGame 两个字体族（界面、时间轴、预览文字全部生效）；可在设置里关闭。v0.7.0：RPEN 特殊事件（线文本/判定线贴图）导出时转成 Milthm 故事板。v0.6.9：修复预览旋转方向与渲染器相反。v0.6.8：预览落速按 Milthm 完整公式组合（Speed×线FlowSpeed×音符FlowSpeed）。v0.6.7：预览判定头放大到音符大小。v0.6.6：新增「全局流速（预览，同播放器 FLOW_SPEED）」设置（默认 1.66）。",
-    "en-US": "Import/edit/export Milthm fan charts (fmt=2) in RPEN. Track-based: each judge line = one Milthm track, notes locked to track center. v0.7.1 replaces RPEN's text font with the bundled ChillRoundF font (third-party, SIL OFL-1.1; license text and copyright notice ship in fonts/OFL.txt and fonts/FONT-NOTICE.txt) while the mod is enabled, overriding the RPE / RPEGame font families (UI, timeline and preview text); it can be disabled in settings. v0.7.0 converts RPEN special events (line text / judgement-line textures) into Milthm storyboards on export. Export commands produce Milthm chart.json / package zip."
+    "zh-CN": "在 RPEN 中导入/编辑/导出 Milthm 自制谱（fmt=2），轨道式。v0.7.2：适配「多线编辑」的事件类型下拉——Milthm 谱面下按当前事件列映射显示语义通道名（线体/线头/整体不透明度、流速倍率、轨道大小、颜色、文字），隐藏无语义的着色器列；缩放列的多线编辑会并入唯一 Size(3) 通道。v0.7.1：模组启用后把 RPEN 全部文字换成随包 ChillRoundF（OFL-1.1，许可证随包）。v0.7.0：RPEN 特殊事件（线文本/判定线贴图）导出时转 Milthm 故事板。v0.6.9：修复预览旋转方向。v0.6.8：预览落速按 Milthm 完整公式组合。v0.6.7：预览判定头放大到音符大小。v0.6.6：全局流速（预览）设置。",
+    "en-US": "Import/edit/export Milthm fan charts (fmt=2) in RPEN. Track-based: each judge line = one Milthm track. v0.7.2 adapts RPEN's multi-line edit event-type dropdown for Milthm charts: labels follow the current event-column mapping (per-channel transparency, flow speed, size, colour, text), the shader type is hidden, and scale-column edits are merged into the single Milthm Size(3) channel. v0.7.1 replaces all RPEN text with the bundled ChillRoundF font (SIL OFL-1.1, license shipped). v0.7.0 converts RPEN special events (line text / line textures) into Milthm storyboards on export."
   },
   "entry": "main.mjs",
   "settings": {
