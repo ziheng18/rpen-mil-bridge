@@ -6,14 +6,14 @@
     "zh-CN": "Milthm 自制谱桥接",
     "en-US": "Milthm fmt=2 Bridge"
   },
-  "version": "0.6.3",
+  "version": "0.6.4",
   "author": {
     "zh-CN": "可行性验证原型",
     "en-US": "Feasibility prototype"
   },
   "description": {
-    "zh-CN": "在 RPEN 中导入/编辑/导出 Milthm 自制谱（fmt=2），轨道式。v0.6.3：不透明度事件（轨道整体 2/线体 8/线头 9/音符整体 13）的「钩定」状态现在跨提交保持；导入的零时长透明度事件按钩定显示（与 X/Y/旋转/速度列一致）；编辑某条透明度事件不再重写同列其它未修改事件。v0.6.2：缺失的线透明度轨道补「0 拍起 1 拍 0」+「最早透明度事件拍 255」两条初始化事件，导出时过滤；线头/线身不互相补；音符整体(13) 不处理；新建谱按 RPEN 默认事件。",
-    "en-US": "Import/edit/export Milthm fan charts (fmt=2) in RPEN. Track-based: each judge line = one Milthm track, notes locked to track center (positionX=0). v0.6.3 fixes the RPEN event hook (inst) state on opacity events: it now survives commits, imported zero-duration transparency events show as hooked, and editing one opacity event no longer rewrites untouched events of the same column. Export commands produce Milthm chart.json / package zip."
+    "zh-CN": "在 RPEN 中导入/编辑/导出 Milthm 自制谱（fmt=2），轨道式。v0.6.4：修复在 Milthm 谱面里新增/批量增加判定线后出现的「初始化事件列」死循环（会让判定线面板按钮点不动、撤销栈被打满）；新加的线会即时转成 Milthm 轨道线。v0.6.3：不透明度事件（2/8/9/13）的钩定状态跨提交保持，导入的零时长透明度事件按钩定显示，编辑一条不再重写同列其它事件。v0.6.2：缺失的线透明度轨道补「0 拍起 1 拍 0」+「最早透明度事件拍 255」两条初始化事件，导出时过滤。",
+    "en-US": "Import/edit/export Milthm fan charts (fmt=2) in RPEN. Track-based: each judge line = one Milthm track, notes locked to track center (positionX=0). v0.6.4 fixes an endless \"initialise event columns\" commit loop after adding plain judge lines to a Milthm chart (it froze the judge-line panel); added lines are converted to Milthm track lines immediately. Export commands produce Milthm chart.json / package zip."
   },
   "entry": "main.mjs",
   "settings": {

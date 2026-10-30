@@ -150,7 +150,7 @@ try {
     hookOffPersisted: (data('hook off').after?.inst ?? 0) === 0,
     exceptions: exceptions.length,
   };
-  result.ok = result.version === '0.6.3' && result.zeroDurationOpacityHooked && result.controlZeroDurationHooked
+  result.ok = Boolean(result.version) && result.zeroDurationOpacityHooked && result.controlZeroDurationHooked
     && result.hookOnPersisted && result.hookOnEndSynced && result.hookOnSurvivesSecondCommit && result.hookOffPersisted && result.exceptions === 0;
   report.result = result;
   fs.writeFileSync(path.join(OUT, 'report.json'), JSON.stringify(report, null, 2));

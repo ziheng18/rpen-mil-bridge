@@ -1,0 +1,101 @@
+{
+  "steps": [
+    {
+      "name": "mod",
+      "data": {
+        "loaded": "loaded",
+        "version": "0.6.4"
+      }
+    },
+    {
+      "name": "before add",
+      "data": {
+        "lines": 19,
+        "undo": 2,
+        "commits": 0
+      }
+    },
+    {
+      "name": "after add",
+      "data": {
+        "lines": 20,
+        "undo": 3,
+        "commitCount2s": 1,
+        "commitLabels": [
+          "新增判定线"
+        ],
+        "addedLineHasStash": true,
+        "addedLineHasEvents": true,
+        "addedLineSemantics": {
+          "x": 1,
+          "bodyAlpha": 1,
+          "flowSpeed": 1
+        }
+      }
+    },
+    {
+      "name": "add click",
+      "data": {
+        "clicked": true,
+        "hit": true,
+        "text": "＋ 新增",
+        "disabled": false
+      }
+    },
+    {
+      "name": "responsiveness",
+      "data": {
+        "moved": 6,
+        "attempts": 6,
+        "details": [
+          {
+            "label": "上移",
+            "before": 19,
+            "after": 18,
+            "clicked": true
+          },
+          {
+            "label": "下移",
+            "before": 18,
+            "after": 19,
+            "clicked": true
+          },
+          {
+            "label": "上移",
+            "before": 19,
+            "after": 18,
+            "clicked": true
+          },
+          {
+            "label": "下移",
+            "before": 18,
+            "after": 19,
+            "clicked": true
+          },
+          {
+            "label": "上移",
+            "before": 19,
+            "after": 18,
+            "clicked": true
+          },
+          {
+            "label": "下移",
+            "before": 18,
+            "after": 19,
+            "clicked": true
+          }
+        ]
+      }
+    }
+  ],
+  "exceptions": [],
+  "result": {
+    "version": "0.6.4",
+    "addedLines": 20,
+    "commitCountAfterAdd": 1,
+    "addedLineHasStash": true,
+    "panelMoves": 6,
+    "exceptions": 0,
+    "ok": true
+  }
+}

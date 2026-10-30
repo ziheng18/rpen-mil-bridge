@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
-import { importMilthmChart, exportMilthmChart } from '../rpen-milthm-bridge/convert.mjs';
+import { importMilthmChart, exportMilthmChart, normalizeLaneChart } from '../rpen-milthm-bridge/convert.mjs';
 import { ensureChartColumns, syncMilthmColumns, remapColumns, buildMilthmExportChart, semanticEvents } from '../rpen-milthm-bridge/columns.mjs';
 
 const WORK = 'E:\\File\\deepseek harness\\mil';
@@ -125,6 +125,43 @@ function semanticDiff(exported, label) {
   }
   console.log('semantic totals:', JSON.stringify(totals));
   if (totals.lineAlpha !== 343) failures.push('lineAlpha count ' + totals.lineAlpha + ' != 343');
+}
+
+// 5) a plain RPE line added to a Milthm chart (新增判定线/批量增加) must be initialised
+//    exactly once: ensureChartColumns() has to converge, otherwise every commit reports
+//    "needs init" again and the editor enters an endless commit loop (v0.6.3 bug that made
+//    the 判定线 panel buttons unclickable).
+{
+  const rpeEvent = value => ({ startTime: [0, 0, 1], endTime: [0, 1, 1], start: value, end: value,
+    easingType: 1, easingLeft: 0, easingRight: 1, bezier: 0, bezierPoints: [0, 0, 1, 1], linkgroup: 0 });
+  const plainLine = {
+    Group: 0, Name: 'Line 20', Texture: 'line.png', anchor: [0.5, 0.5], bpmfactor: 1, father: -1,
+    rotateWithFather: true, isCover: 1, isGif: false, zOrder: 20,
+    eventLayers: [{
+      moveXEvents: [rpeEvent(0)], moveYEvents: [rpeEvent(0)], rotateEvents: [rpeEvent(0)],
+      alphaEvents: [rpeEvent(255)], speedEvents: [rpeEvent(10)],
+    }],
+    extended: {}, notes: [], numOfNotes: 0,
+  };
+  const withLine = { ...synced, judgeLineList: [...synced.judgeLineList, plainLine] };
+  const initialised = ensureChartColumns(withLine);
+  if (!initialised) failures.push('ensure: plain line was not initialised');
+  else {
+    const added = initialised.judgeLineList[19];
+    if (!added['x-milthm']?.events) failures.push('ensure: added line has no x-milthm stash/events');
+    if (added['x-milthm']?.events?.x?.length !== 1) failures.push('ensure: added line X semantics missing');
+    if (added['x-milthm']?.events?.bodyAlpha?.length !== 1) failures.push('ensure: added line alpha semantics missing');
+    if (ensureChartColumns(initialised)) failures.push('ensure: not idempotent (second pass still reports changes) => commit loop risk');
+    const committed = normalizeLaneChart(syncMilthmColumns(initialised), {});
+    if (ensureChartColumns(committed)) failures.push('ensure: still needs init after the commit pipeline => commit loop risk');
+    const exported = exportMilthmChart(buildMilthmExportChart(committed), {}).chart;
+    if (exported.lines.length !== 20) failures.push('export: added line missing (lines ' + exported.lines.length + ')');
+    else {
+      const count = (exported.lines[19].animations ?? []).length;
+      if (!count) failures.push('export: added line exported without animations');
+      console.log('plain line init -> stash ok, second pass null, exported animations:', count);
+    }
+  }
 }
 
 if (failures.length) { console.log('\n=== FAILURES ==='); for (const failure of failures.slice(0, 20)) console.log('-', failure); process.exitCode = 1; }

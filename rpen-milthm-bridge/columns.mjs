@@ -303,26 +303,62 @@ export function chartColumns(chart) {
   return Array.isArray(columns) && columns.length === 5 ? columns : DEFAULT_COLUMNS.slice();
 }
 
-/** Prepare semantics/mapping for a freshly imported chart. Returns a new chart or null. */
+/**
+ * Build the Milthm stash for a line that has none (e.g. a plain RPE line added with
+ * "新增判定线" / "批量增加" on a Milthm chart). Such a line becomes a regular track:
+ * X/Y/rotation/flow-speed/size come from its native events, its RPEN alpha track becomes
+ * LineBodyTransparency(8) (the default slot 3 semantics), matching what
+ * main.mjs `buildMilthmChart()` does for a brand-new chart.
+ */
+function stashForPlainLine(line, index) {
+  const layer = line?.eventLayers?.[0] ?? {};
+  const extended = line?.extended ?? {};
+  return {
+    sourceIndex: index,
+    rawExtras: [],
+    channels: { bodyAlpha: [], headAlpha: [], wholeAlpha: [], flowSpeed: [] },
+    primaryAlphaType: MIL_ANIM.LINE_BODY_TRANSPARENCY,
+    primarySpeedType: MIL_ANIM.FLOW_SPEED,
+    events: {
+      x: cloneEvents(layer.moveXEvents),
+      y: cloneEvents(layer.moveYEvents),
+      rotate: cloneEvents(layer.rotateEvents),
+      flowSpeed: cloneEvents(layer.speedEvents),
+      speed: [], flowRaw: [],
+      size: cloneEvents(extended.scaleXEvents),
+      lineAlpha: [],
+      bodyAlpha: carrierEventsToRaw(layer.alphaEvents ?? [], MIL_ANIM.LINE_BODY_TRANSPARENCY),
+      headAlpha: [], wholeAlpha: [], legacy: [],
+    },
+  };
+}
+
+/**
+ * Prepare semantics/mapping for a freshly imported chart (and for lines added later).
+ * MUST be idempotent: the caller commits the returned chart, which runs every hook again,
+ * so a chart that still "needs work" after one pass would cause an endless commit loop
+ * (that froze the 判定线 panel in v0.6.3 when a plain line was added to a Milthm chart).
+ * Returns a new chart, or null when the chart is already fully initialised.
+ */
 export function ensureChartColumns(chart) {
   if (!isMilthmChart(chart)) return null;
   const root = chart['x-milthm'];
+  const lines = chart.judgeLineList ?? [];
+  const columnsMissing = !Array.isArray(root.columns) || root.columns.length !== 5;
+  const linesNeedInit = lines.some(line => !line?.['x-milthm'] || !line['x-milthm'].events);
+  if (!columnsMissing && !linesNeedInit) return null;
   const next = clone(chart);
-  let changed = false;
-  if (!Array.isArray(next['x-milthm'].columns) || next['x-milthm'].columns.length !== 5) {
-    next['x-milthm'].columns = DEFAULT_COLUMNS.slice();
-    changed = true;
-  }
+  if (!Array.isArray(next['x-milthm'].columns) || next['x-milthm'].columns.length !== 5) next['x-milthm'].columns = DEFAULT_COLUMNS.slice();
   const columns = next['x-milthm'].columns;
-  for (const line of (next.judgeLineList ?? [])) {
-    if (!line?.['x-milthm']) { changed = true; continue; }
-    if (!line['x-milthm'].events) { line['x-milthm'].events = deriveSemantics(line); changed = true; }
+  for (const [index, line] of (next.judgeLineList ?? []).entries()) {
+    if (!line || typeof line !== 'object') continue;
+    if (!line['x-milthm']) line['x-milthm'] = stashForPlainLine(line, index);
+    if (!line['x-milthm'].events) line['x-milthm'].events = deriveSemantics(line);
     const semantics = line['x-milthm'].events;
     const carriers = buildCarrierArrays(semantics, columns);
     writeCarriers(line, carriers);
     line['x-milthm'].applied = carriers.map(signature);
   }
-  if (!changed) return null;
   return next;
 }
 

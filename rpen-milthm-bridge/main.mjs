@@ -355,7 +355,11 @@ export async function activate(api) {
   /* ---------------- lane lock on every commit ---------------- */
   api.hook('session:before-commit', change => {
     if (!change || !change.chart) return;
-    change.chart = normalizeLaneChart(syncMilthmColumns(change.chart), settings());
+    // Lines added to a Milthm chart arrive as plain RPE lines. Give them the Milthm stash in
+    // the same commit; otherwise ensureChartColumns() would keep reporting "needs init" after
+    // every commit and the auto-initialise commit would loop forever.
+    const chart = ensureChartColumns(change.chart) ?? change.chart;
+    change.chart = normalizeLaneChart(syncMilthmColumns(chart), settings());
   });
 
   /* ---------------- helpers for loading/saving ---------------- */
@@ -912,6 +916,9 @@ export async function activate(api) {
     try {
       const next = ensureChartColumns(chart);
       if (!next || editor.chart !== chart) return;
+      // Safety net against commit loops: only commit when a second pass is already converged.
+      // (v0.6.3 looped here when a plain RPE line was added to a Milthm chart.)
+      if (ensureChartColumns(next)) { api.log('Milthm 事件列初始化未收敛，跳过自动提交'); return; }
       editor.commit('初始化 Milthm 事件列', next);
     } catch (error) {
       api.log('初始化 Milthm 事件列失败', error);
