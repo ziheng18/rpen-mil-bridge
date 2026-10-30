@@ -6,14 +6,14 @@
     "zh-CN": "Milthm 自制谱桥接",
     "en-US": "Milthm fmt=2 Bridge"
   },
-  "version": "0.6.2",
+  "version": "0.6.3",
   "author": {
     "zh-CN": "可行性验证原型",
     "en-US": "Feasibility prototype"
   },
   "description": {
-    "zh-CN": "在 RPEN 中导入/编辑/导出 Milthm 自制谱（fmt=2），轨道式。v0.6.2：缺失透明度轨道补「0拍起1拍0」+「其他透明度事件开始拍255」；缺失线透明度轨道只补「0 拍起 1 拍长、完全透明」初始化；不写 255、不写零长事件；线头/线身不互相补；新建谱按 RPEN 默认事件。",
-    "en-US": "Import/edit/export Milthm fan charts (fmt=2) in RPEN. Track-based: each judge line = one Milthm track, notes locked to track center (positionX=0). Import a Milthm chart zip via the normal Open dialog; export commands produce Milthm chart.json / package zip."
+    "zh-CN": "在 RPEN 中导入/编辑/导出 Milthm 自制谱（fmt=2），轨道式。v0.6.3：不透明度事件（轨道整体 2/线体 8/线头 9/音符整体 13）的「钩定」状态现在跨提交保持；导入的零时长透明度事件按钩定显示（与 X/Y/旋转/速度列一致）；编辑某条透明度事件不再重写同列其它未修改事件。v0.6.2：缺失的线透明度轨道补「0 拍起 1 拍 0」+「最早透明度事件拍 255」两条初始化事件，导出时过滤；线头/线身不互相补；音符整体(13) 不处理；新建谱按 RPEN 默认事件。",
+    "en-US": "Import/edit/export Milthm fan charts (fmt=2) in RPEN. Track-based: each judge line = one Milthm track, notes locked to track center (positionX=0). v0.6.3 fixes the RPEN event hook (inst) state on opacity events: it now survives commits, imported zero-duration transparency events show as hooked, and editing one opacity event no longer rewrites untouched events of the same column. Export commands produce Milthm chart.json / package zip."
   },
   "entry": "main.mjs",
   "settings": {

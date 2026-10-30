@@ -34,6 +34,27 @@ export const MIL_ANIM_TYPES = {
   wholeAlpha: MIL_ANIM.WHOLE_TRANSPARENCY,
 };
 
+const clone = value => structuredClone(value);
+const cloneEvents = events => clone(Array.isArray(events) ? events : []);
+const constantEvent = value => ({
+  startTime: [0, 0, 1], endTime: [0, 0, 1], start: value, end: value,
+  easingType: 1, easingLeft: 0, easingRight: 1, bezier: 0, bezierPoints: [0, 0, 1, 1], linkgroup: 0, inst: 1,
+});
+
+const ALPHA_SCALE = 255;
+const clampAlpha = value => Math.max(0, Math.min(1, Number(value) || 0));
+const sameTime = (left, right) => Array.isArray(left) && Array.isArray(right) && left.length === 3 && right.length === 3
+  && left[0] === right[0] && left[1] === right[1] && left[2] === right[2];
+
+// Editor-only markers (synthetic init / 钩定 inst) have no Milthm counterpart.
+// Exported animations are rebuilt field by field in convert.rawToMil, so they never leak.
+const stripInternalMarkers = raw => {
+  const copy = clone(raw);
+  delete copy.syntheticInit;
+  delete copy.inst;
+  return copy;
+};
+
 function rawSnapshot(event) {
   const raw = event?.['x-milthm']?.raw;
   return raw && Number.isFinite(Number(raw.type)) ? clone(raw) : null;
@@ -47,33 +68,64 @@ function rpeEventsToLineAlphaRaw(events) {
   return (events ?? []).filter(event => !event?.['x-milthm']?.synthetic).map(event => rawSnapshot(event) ?? carrierEventToRaw(event, MIL_ANIM.TRANSPARENCY));
 }
 
-const clone = value => structuredClone(value);
-const cloneEvents = events => clone(Array.isArray(events) ? events : []);
-const constantEvent = value => ({
-  startTime: [0, 0, 1], endTime: [0, 0, 1], start: value, end: value,
-  easingType: 1, easingLeft: 0, easingRight: 1, bezier: 0, bezierPoints: [0, 0, 1, 1], linkgroup: 0, inst: 1,
-});
+const easeMatchesRaw = (event, raw) => Number(event?.easingType ?? 1) === milEaseToRpe(raw?.ease)
+  && Number(event?.easingLeft ?? 0) === Number(raw?.ease?.clipLeft ?? 0)
+  && Number(event?.easingRight ?? 1) === Number(raw?.ease?.clipRight ?? 1);
 
 function rawToCarrierEvent(raw) {
   const ease = raw?.ease ?? { type: 0, press: 0 };
-  return {
+  const start = Number(raw?.start ?? 0) * ALPHA_SCALE;
+  const end = Number(raw?.end ?? 0) * ALPHA_SCALE;
+  const event = {
     startTime: clone(raw?.startTime ?? [0, 0, 1]), endTime: clone(raw?.endTime ?? [0, 0, 1]),
-    start: Number(raw?.start ?? 0) * 255, end: Number(raw?.end ?? 0) * 255,
+    start, end,
     easingType: milEaseToRpe(ease),
     easingLeft: Number(ease?.clipLeft ?? 0), easingRight: Number(ease?.clipRight ?? 1),
     bezier: 0, bezierPoints: [0, 0, 1, 1], linkgroup: 0,
   };
+  // 钩定 (RPEN inst): an explicit toggle is persisted in the raw event; otherwise a
+  // Milthm zero-duration event is imported hooked, like every other channel
+  // (convert.rpeEventFromMil sets inst for zero-duration events).
+  const explicit = raw?.inst === 0 || raw?.inst === 1 ? Number(raw.inst) : null;
+  const hooked = explicit === null ? sameTime(raw?.startTime, raw?.endTime) : explicit === 1;
+  if (hooked) event.inst = 1;
+  // Keep the Milthm source next to the carrier: an untouched event is written back
+  // unchanged even if another event in the same column was edited.
+  event['x-milthm'] = { milthmRaw: stripInternalMarkers(raw), carrierValues: { start, end } };
+  return event;
 }
 
 function carrierEventToRaw(event, type) {
-  const ease = rpeEaseToMil(event?.easingType ?? 1);
-  return {
-    type,
+  const stash = event?.['x-milthm'];
+  const snapshot = stash?.milthmRaw && Number.isFinite(Number(stash.milthmRaw.type)) ? stash.milthmRaw : null;
+  const recorded = stash?.carrierValues;
+  const carrierStart = Number(event?.start ?? 0);
+  const carrierEnd = Number(event?.end ?? 0);
+  // RPEN truncates fractional alpha values on commit (integerChartAlpha), so both the
+  // exact and the truncated recorded value count as "not edited by the user".
+  const sameValue = (recordedValue, carrierValue) => recordedValue !== undefined
+    && (carrierValue === Number(recordedValue) || Math.trunc(Number(recordedValue)) === carrierValue);
+  const valuesUntouched = Boolean(recorded) && sameValue(recorded.start, carrierStart) && sameValue(recorded.end, carrierEnd);
+  const valueFor = (carrierValue, snapshotValue) => snapshot && valuesUntouched
+    ? clone(snapshotValue)
+    : clampAlpha(carrierValue / ALPHA_SCALE);
+  const raw = {
+    type: Number(snapshot?.type ?? type) || type,
     startTime: clone(event?.startTime ?? [0, 0, 1]), endTime: clone(event?.endTime ?? [0, 0, 1]),
-    start: Math.max(0, Math.min(1, Number(event?.start ?? 0) / 255)),
-    end: Math.max(0, Math.min(1, Number(event?.end ?? 0) / 255)),
-    ease: { type: ease.type, press: ease.press, isValueExp: false, cusValueExp: '', clipLeft: Number(event?.easingLeft ?? 0), clipRight: Number(event?.easingRight ?? 1) },
+    start: valueFor(carrierStart, snapshot?.start),
+    end: valueFor(carrierEnd, snapshot?.end),
   };
+  // 钩定 sets end = start in RPEN; keep both Milthm values equal in that case.
+  if (carrierStart === carrierEnd) raw.end = clone(raw.start);
+  if (snapshot && easeMatchesRaw(event, snapshot)) raw.ease = clone(snapshot.ease);
+  else {
+    const ease = rpeEaseToMil(event?.easingType ?? 1);
+    raw.ease = { type: ease.type, press: ease.press, isValueExp: false, cusValueExp: '', clipLeft: Number(event?.easingLeft ?? 0), clipRight: Number(event?.easingRight ?? 1) };
+  }
+  // Persist an explicit 钩定 toggle; the natural state (Milthm zero-duration) needs no marker.
+  const hooked = event?.inst === 1 || event?.inst === true;
+  if (hooked !== sameTime(raw.startTime, raw.endTime)) raw.inst = hooked ? 1 : 0;
+  return raw;
 }
 
 function sortByBeat(events) {

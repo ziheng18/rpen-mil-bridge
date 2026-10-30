@@ -1,0 +1,91 @@
+{
+  "steps": [
+    {
+      "name": "mod",
+      "data": {
+        "loaded": "loaded",
+        "version": "0.6.3"
+      }
+    },
+    {
+      "name": "census",
+      "data": {
+        "columns": [
+          "x",
+          "y",
+          "rotate",
+          "bodyAlpha",
+          "flowSpeed"
+        ],
+        "alpha": {
+          "total": 145,
+          "zero": 52,
+          "hooked": 52,
+          "zeroHooked": 52
+        },
+        "controlX": {
+          "total": 216,
+          "zero": 35,
+          "hooked": 35,
+          "zeroHooked": 35
+        }
+      }
+    },
+    {
+      "name": "hook on",
+      "data": {
+        "lineIndex": 1,
+        "before": {
+          "start": 255,
+          "end": 0,
+          "inst": 0
+        },
+        "after": {
+          "start": 255,
+          "end": 255,
+          "inst": 1
+        }
+      }
+    },
+    {
+      "name": "second commit",
+      "data": {
+        "lineIndex": 1,
+        "hookedStartTime": [
+          123,
+          4,
+          8
+        ],
+        "instAfterSecondCommit": 1
+      }
+    },
+    {
+      "name": "hook off",
+      "data": {
+        "lineIndex": 1,
+        "before": {
+          "inst": 1
+        },
+        "after": {
+          "inst": 0
+        }
+      }
+    },
+    {
+      "name": "exceptions",
+      "data": []
+    }
+  ],
+  "exceptions": [],
+  "result": {
+    "version": "0.6.3",
+    "zeroDurationOpacityHooked": true,
+    "controlZeroDurationHooked": true,
+    "hookOnPersisted": true,
+    "hookOnEndSynced": true,
+    "hookOnSurvivesSecondCommit": true,
+    "hookOffPersisted": true,
+    "exceptions": 0,
+    "ok": true
+  }
+}
