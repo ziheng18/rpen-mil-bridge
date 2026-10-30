@@ -1,0 +1,140 @@
+{
+  "steps": [
+    {
+      "name": "before",
+      "data": {
+        "wasLoaded": true,
+        "loadedAfterDisable": false,
+        "rpe13": 103.71,
+        "rpe52": 414.86,
+        "game30": 239.34,
+        "rpe13Hello": 161.25
+      }
+    },
+    {
+      "name": "mod",
+      "data": {
+        "loaded": "loaded",
+        "version": "0.7.1",
+        "files": [
+          "columns.mjs",
+          "convert.mjs",
+          "fonts/ChillRoundF.ttf",
+          "fonts/FONT-NOTICE.txt",
+          "fonts/OFL.txt",
+          "main.mjs",
+          "mod.json",
+          "README.md"
+        ],
+        "fontSetting": {
+          "type": "boolean",
+          "label": {
+            "zh-CN": "把 RPEN 全部文字换成 ChillRoundF 字体",
+            "en-US": "Use the bundled ChillRoundF font for RPEN text"
+          },
+          "description": {
+            "zh-CN": "启用时用随模组分发的 ChillRoundF.ttf 覆盖 RPEN 文字：界面/按钮/下拉/输入框等所有 DOM 文本，以及所有用 RPE / RPEGame 字体族的画布文本（时间轴、预览文字、编号等）都会换成这个字体；关闭后恢复 RPEN 自带字体。（ChillRoundF 是第三方 OFL-1.1 字体，不是 PhiEdit 自带字体；许可证与版权声明随包。）",
+            "en-US": "Overrides RPEN text with the bundled ChillRoundF.ttf: all DOM text (buttons, selects, inputs, textareas, kbd, code boxes) and all canvas text that uses the RPE / RPEGame families (timeline, preview text, line numbers). Disable to restore RPEN's own font. (ChillRoundF is a third-party OFL-1.1 font, not PhiEdit's bundled font; license and copyright notice ship with the package.)"
+          },
+          "default": true
+        },
+        "current": true
+      }
+    },
+    {
+      "name": "font",
+      "data": {
+        "rpe13": 110.63,
+        "rpe52": 442.51,
+        "game30": 255.29,
+        "direct52": 442.51,
+        "rpe52Hello": 170.47,
+        "direct52Hello": 170.47
+      }
+    },
+    {
+      "name": "dom-fonts",
+      "data": {
+        "body": "ChillRoundF, RPE, \"Microsoft YaHei\", sans-serif",
+        "root": "ChillRoundF, RPE, \"Microsoft YaHei\", sans-serif",
+        "button": "ChillRoundF, RPE, \"Microsoft YaHei\", sans-serif",
+        "select": "ChillRoundF, RPE, \"Microsoft YaHei\", sans-serif",
+        "textarea": "ChillRoundF, RPE, \"Microsoft YaHei\", sans-serif",
+        "batchScript": "ChillRoundF, RPE, \"Microsoft YaHei\", sans-serif",
+        "kbd": "ChillRoundF, RPE, \"Microsoft YaHei\", sans-serif"
+      }
+    },
+    {
+      "name": "toggle",
+      "data": {
+        "off": {
+          "rpe52": 414.86,
+          "rpe13": 103.71
+        },
+        "on": {
+          "rpe52": 442.51,
+          "rpe13": 110.63
+        },
+        "offDom": {
+          "body": "rpen-skin-inkline-ui, Arial, RPE, \"Microsoft YaHei UI\", \"PingFang SC\", sans-serif",
+          "select": "rpen-skin-inkline-ui, Arial, RPE, \"Microsoft YaHei UI\", \"PingFang SC\", sans-serif"
+        },
+        "onDom": {
+          "body": "ChillRoundF, RPE, \"Microsoft YaHei\", sans-serif",
+          "select": "ChillRoundF, RPE, \"Microsoft YaHei\", sans-serif"
+        }
+      }
+    },
+    {
+      "name": "text-edit",
+      "data": {
+        "textEvents": 1
+      }
+    },
+    {
+      "name": "preview-text",
+      "data": {
+        "text": "字体测试 ABC 123",
+        "layoutWidth": 442.51,
+        "directWidth": 442.51
+      }
+    }
+  ],
+  "exceptions": [],
+  "result": {
+    "version": "0.7.1",
+    "fontInPackage": true,
+    "licenseInPackage": true,
+    "defaultSetting": true,
+    "before": {
+      "rpe13": 103.71,
+      "rpe52": 414.86,
+      "game30": 239.34
+    },
+    "after": {
+      "rpe13": 110.63,
+      "rpe52": 442.51,
+      "game30": 255.29,
+      "direct52": 442.51
+    },
+    "rpeReplaced": true,
+    "gameReplaced": true,
+    "toggleOffRestores": true,
+    "toggleOnReapplies": true,
+    "previewUsesFont": true,
+    "domFonts": {
+      "body": "ChillRoundF, RPE, \"Microsoft YaHei\", sans-serif",
+      "root": "ChillRoundF, RPE, \"Microsoft YaHei\", sans-serif",
+      "button": "ChillRoundF, RPE, \"Microsoft YaHei\", sans-serif",
+      "select": "ChillRoundF, RPE, \"Microsoft YaHei\", sans-serif",
+      "textarea": "ChillRoundF, RPE, \"Microsoft YaHei\", sans-serif",
+      "batchScript": "ChillRoundF, RPE, \"Microsoft YaHei\", sans-serif",
+      "kbd": "ChillRoundF, RPE, \"Microsoft YaHei\", sans-serif"
+    },
+    "domFontsAllChillRound": true,
+    "domReverts": true,
+    "domReapplies": true,
+    "exceptions": 0,
+    "ok": true
+  }
+}

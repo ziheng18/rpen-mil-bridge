@@ -6,14 +6,14 @@
     "zh-CN": "Milthm 自制谱桥接",
     "en-US": "Milthm fmt=2 Bridge"
   },
-  "version": "0.7.0",
+  "version": "0.7.1",
   "author": {
     "zh-CN": "可行性验证原型",
     "en-US": "Feasibility prototype"
   },
   "description": {
-    "zh-CN": "在 RPEN 中导入/编辑/导出 Milthm 自制谱（fmt=2），轨道式。v0.7.0：RPEN 特殊事件转 Milthm 故事板——线文本（extended.textEvents）导出为文字故事板（type 1）、判定线贴图（line.Texture）导出为图片故事板（type 0，zip 自动打包 res/ 图片）；转换只在导出时进行；无音符的特殊线不再作为轨道导出。v0.6.9：修复预览旋转方向与渲染器相反。v0.6.8：预览落速按 Milthm 完整公式组合（Speed×线FlowSpeed×音符FlowSpeed）。v0.6.7：预览判定头放大到音符大小。v0.6.6：新增「全局流速（预览，同播放器 FLOW_SPEED）」设置（默认 1.66）。v0.6.5：新建谱 Track 0 不透明度初始化 255，新增线为 0。v0.6.4：修复新增判定线后的初始化死循环。v0.6.3：不透明度事件钩定状态跨提交保持。",
-    "en-US": "Import/edit/export Milthm fan charts (fmt=2) in RPEN. Track-based: each judge line = one Milthm track, notes locked to track center. v0.7.0 converts RPEN special events into Milthm storyboards: line text (extended.textEvents) -> text storyboards (type 1), judgement-line textures (line.Texture) -> picture storyboards (type 0, the zip packs the image under res/). The conversion happens at export time only; note-less special lines are no longer exported as tracks. Export commands produce Milthm chart.json / package zip."
+    "zh-CN": "在 RPEN 中导入/编辑/导出 Milthm 自制谱（fmt=2），轨道式。v0.7.1：模组启用后把 RPEN 文字字体换成随包分发的 ChillRoundF（第三方 OFL-1.1 字体，许可证与版权声明随包 fonts/OFL.txt + fonts/FONT-NOTICE.txt）——覆盖 RPE / RPEGame 两个字体族（界面、时间轴、预览文字全部生效）；可在设置里关闭。v0.7.0：RPEN 特殊事件（线文本/判定线贴图）导出时转成 Milthm 故事板。v0.6.9：修复预览旋转方向与渲染器相反。v0.6.8：预览落速按 Milthm 完整公式组合（Speed×线FlowSpeed×音符FlowSpeed）。v0.6.7：预览判定头放大到音符大小。v0.6.6：新增「全局流速（预览，同播放器 FLOW_SPEED）」设置（默认 1.66）。",
+    "en-US": "Import/edit/export Milthm fan charts (fmt=2) in RPEN. Track-based: each judge line = one Milthm track, notes locked to track center. v0.7.1 replaces RPEN's text font with the bundled ChillRoundF font (third-party, SIL OFL-1.1; license text and copyright notice ship in fonts/OFL.txt and fonts/FONT-NOTICE.txt) while the mod is enabled, overriding the RPE / RPEGame font families (UI, timeline and preview text); it can be disabled in settings. v0.7.0 converts RPEN special events (line text / judgement-line textures) into Milthm storyboards on export. Export commands produce Milthm chart.json / package zip."
   },
   "entry": "main.mjs",
   "settings": {
@@ -156,6 +156,18 @@
           "en-US": "Always Milthm track chart"
         }
       }
+    },
+    "editor-font": {
+      "type": "boolean",
+      "label": {
+        "zh-CN": "把 RPEN 全部文字换成 ChillRoundF 字体",
+        "en-US": "Use the bundled ChillRoundF font for RPEN text"
+      },
+      "description": {
+        "zh-CN": "启用时用随模组分发的 ChillRoundF.ttf 覆盖 RPEN 文字：界面/按钮/下拉/输入框等所有 DOM 文本，以及所有用 RPE / RPEGame 字体族的画布文本（时间轴、预览文字、编号等）都会换成这个字体；关闭后恢复 RPEN 自带字体。（ChillRoundF 是第三方 OFL-1.1 字体，不是 PhiEdit 自带字体；许可证与版权声明随包。）",
+        "en-US": "Overrides RPEN text with the bundled ChillRoundF.ttf: all DOM text (buttons, selects, inputs, textareas, kbd, code boxes) and all canvas text that uses the RPE / RPEGame families (timeline, preview text, line numbers). Disable to restore RPEN's own font. (ChillRoundF is a third-party OFL-1.1 font, not PhiEdit's bundled font; license and copyright notice ship with the package.)"
+      },
+      "default": true
     }
   }
 }

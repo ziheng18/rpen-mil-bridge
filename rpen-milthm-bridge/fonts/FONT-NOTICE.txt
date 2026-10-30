@@ -1,0 +1,39 @@
+ChillRoundF / 寒蝉全圆体 · Version 1.000
+==========================================
+
+This file is the copyright / attribution notice for the font file shipped in this
+mod package at fonts/ChillRoundF.ttf. The font is third-party software licensed
+under the SIL Open Font License, Version 1.1 (see the bundled fonts/OFL.txt).
+
+The font file is redistributed here UNMODIFIED, keeping its original family and
+internal font names. The mod only references it from CSS via the font-family
+aliases "RPE" and "RPEGame"; it does not rename, modify or re-license the font.
+
+Copyright / attribution, as recorded in the font's own name table
+--------------------------------------------------------------------
+
+  [Kosugi Maru][Justfont][Maoken][ChillType]
+  Copyright(C)2010 MOTOYA CO.,LTD.
+
+  Family:            寒蝉全圆体 (ChillRoundF)
+  Version:           1.000;ChillType;ChillRoundF
+  Full name:         寒蝉全圆体
+  Unique ID:         1.000;ChillType;ChillRoundF
+  Designer:          justfont & Maoken & ChillType
+  Designer URL:      ChillType
+  Designer:          Warren2060
+  Components:
+    - Kosugi Maru (Copyright(C)2010 MOTOYA CO.,LTD.)
+    - Varela Round (Joe Prince, Latin component; Avraham Cornfeld, Hebrew component)
+    - jf open huninn / justfont open huninn (justfont)
+  License (name table ID 13):
+    This Font Software is licensed under the SIL Open Font License, Version 1.1.
+    This Font Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+    CONDITIONS OF ANY KIND, either express or implied. See the SIL Open Font
+    License for the specific language, permissions and limitations governing your
+    use of this Font Software.
+  License URL (name table ID 14):
+    http://scripts.sil.org/OFL
+
+Full license text: see fonts/OFL.txt in the same package, or
+https://openfontlicense.org

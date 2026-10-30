@@ -112,7 +112,7 @@ export async function activate(api) {
   let lastWarnings = [];
   const settings = () => {
     const keys = ['coord-scale', 'flip-y', 'offset-x', 'offset-y', 'rotation-offset', 'speed-scale', 'lane-lock', 'keep-extra',
-      'preview-tracks', 'preview-dim', 'dim-migrate', 'new-chart-mode', 'renderer-flow-speed'];
+      'preview-tracks', 'preview-dim', 'dim-migrate', 'new-chart-mode', 'renderer-flow-speed', 'editor-font'];
     const result = {};
     for (const key of keys) { try { result[key] = api.settings.get(key); } catch { /* ignore */ } }
     return result;
@@ -136,11 +136,15 @@ export async function activate(api) {
   };
 
   /* ---------------- global event type: background dim ---------------- */
+  // Global-events protocol: mod-persistent types should be named "mod name + author" so charts
+  // that don't have the mod loaded can still show a meaningful source; the host stamps the source
+  // metadata (id/name/author/version) automatically and keeps data after unload.
+  const dimTypeName = () => `${api.manifest.name} · ${api.manifest.author}`;
   try {
     api.globalEvents.register({
       id: DIM_TYPE,
-      name: 'Milthm 背景明暗',
-      description: '对应 Milthm 通过纯黑立绘（storyboard）实现的背景明暗：0=背景原样，1=纯黑。',
+      name: dimTypeName(),
+      description: 'Milthm 背景明暗（由 Milthm 纯黑立绘 storyboard 实现）：0=背景原样，1=纯黑。',
       persistent: true,
       columns: [{ id: 'dim', name: '明暗', timelineLabel: '明暗', valueType: 'number', defaultValue: 0, min: 0, max: 1, step: 0.01, width: 120 }],
     });
@@ -442,9 +446,63 @@ export async function activate(api) {
     if (isMilthmChart(chart) && this.scene && this.scene.__milthmFlow !== previewFlowMultiplier()) this.scene.chart = null;
     return previous.apply(this, args);
   });
-  api.on(`settings:${api.id}`, detail => {
-    if (detail?.key !== 'renderer-flow-speed') return;
+  /* ---------------- text font: bundled ChillRoundF replaces RPEN's RPE/RPEGame faces ---------------- */
+  // RPEN draws UI / editor / timeline / preview text with its bundled families RPE and RPEGame
+  // (styles.css @font-face -> assets/rpe/fonts/cmdysj.ttf). A later @font-face rule with the same
+  // family name wins over the bundled one, so injecting these two rules switches every RPEN text
+  // using those families to the third-party ChillRoundF font (SIL OFL-1.1) shipped in this package.
+  // Uses the API-1 documented pieces: api.package.url() for package assets, api.style() for CSS,
+  // api.settings.onChange() for live setting changes, api.signal for teardown.
+  const EDITOR_FONT_PATH = 'fonts/ChillRoundF.ttf';
+  let editorFontUrl = null;
+  let editorFontSheet = null;
+  let editorFontApplied = false;
+  const editorFontEnabled = () => settings()['editor-font'] !== false;
+  const editorFontCss = url => [
+    `@font-face { font-family: 'ChillRoundF'; src: url("${url}") format('truetype'); font-display: swap; }`,
+    `@font-face { font-family: RPE; src: url("${url}") format('truetype'); font-display: swap; }`,
+    `@font-face { font-family: RPEGame; src: url("${url}") format('truetype'); font-display: swap; }`,
+    // DOM text: everything inherits ChillRoundF, including controls that normally pick
+    // 'Microsoft YaHei' / Consolas / monospace explicitly (selects, textareas, kbd, code boxes).
+    // Canvas text keeps its own context.font strings, which use the RPE / RPEGame faces above.
+    `:root, body { font-family: 'ChillRoundF', RPE, 'Microsoft YaHei', sans-serif !important; }`,
+    `body *:not(canvas) { font-family: inherit !important; }`,
+  ].join('\n');
+  const refreshEditorText = () => {
+    try { editor.preview?.lineTextLayouts?.clear?.(); } catch { /* ignore */ }
     try { editor.invalidate?.(); } catch { /* ignore */ }
+  };
+  const applyEditorFont = async () => {
+    if (!editorFontEnabled()) return;
+    try {
+      if (!api.package?.url) throw new Error('当前 RPEN 不支持模组包资源 URL（api.package.url）');
+      editorFontUrl = editorFontUrl ?? api.package.url(EDITOR_FONT_PATH, 'font/ttf');
+      if (!editorFontSheet) editorFontSheet = api.style(editorFontCss(editorFontUrl));
+      editorFontApplied = true;
+      await Promise.all(['13px RPE', '16px RPE', '52px RPE', '30px RPEGame', '13px ChillRoundF'].map(font => document.fonts.load(font))).catch(() => {});
+      if (api.signal?.aborted || !editorFontEnabled()) return; // module disabled or setting turned off while loading
+      refreshEditorText();
+    } catch (error) {
+      notifyFontFailure(error);
+    }
+  };
+  const notifyFontFailure = error => {
+    if (api.signal?.aborted) return;
+    api.notify(`RPEN 字体加载失败（${EDITOR_FONT_PATH}）：${error?.message ?? error}`, 'error');
+  };
+  const removeEditorFont = () => {
+    try { editorFontSheet?.remove?.(); } catch { /* ignore */ }
+    editorFontSheet = null;
+    editorFontApplied = false;
+    refreshEditorText();
+  };
+  applyEditorFont();
+  // API 1 documents api.settings.onChange({key,value}) for live setting updates (api.on does not
+  // publish 'settings:<id>' as a stable event).
+  api.settings.onChange(change => {
+    if (!change) return;
+    if (change.key === 'renderer-flow-speed') { try { editor.invalidate?.(); } catch { /* ignore */ } return; }
+    if (change.key === 'editor-font') { if (editorFontEnabled()) applyEditorFont(); else removeEditorFont(); }
   });
   api.patch(LineRuntime.prototype, 'noteState', previous => function (entry, state, seconds) {
     const result = previous.call(this, entry, state, seconds);
@@ -624,7 +682,7 @@ export async function activate(api) {
       types: {
         ...(next.globalEvents?.types ?? {}),
         [DIM_TYPE_ID]: {
-          name: 'Milthm 背景明暗',
+          name: dimTypeName(),
           source: { kind: 'mod', id: MOD_ID, name: api.manifest.name, author: api.manifest.author, version: api.manifest.version },
           columns: { dim: { name: '明暗', valueType: 'number', events } },
         },
