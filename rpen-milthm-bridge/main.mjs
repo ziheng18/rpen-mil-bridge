@@ -244,11 +244,16 @@ export async function activate(api) {
     context.strokeStyle = `rgba(${rgb},0.9)`;
     context.lineWidth = Math.max(1, 1.1 * scale * size);
     context.beginPath(); context.moveTo(0, -length); context.lineTo(0, 0); context.stroke();
-    const radius = Math.max(4, 15 * scale * size);
+    // Judgement head is sized like a note (reference: the renderer's note texture).
+    // RPU prefabs: note ≈ 46.30 canvas units, line head ≈ 25.57 canvas units. The old radius 15
+    // matched the line-head size (≈32 world units diameter), so a note-sized head is
+    // 15 × 46.30 / 25.57 ≈ 27.2 -> use 29 (≈58 world units diameter, matching the note).
+    // v0.6.7: radius 15 -> 29, ring/dot scale proportionally, style unchanged.
+    const radius = Math.max(5, 29 * scale * size);
     context.globalAlpha = headAlpha;
     context.beginPath(); context.arc(0, 0, radius, 0, Math.PI * 2);
     context.fillStyle = `rgba(${rgb},0.18)`; context.fill();
-    context.lineWidth = Math.max(1.5, 2.4 * scale * size); context.strokeStyle = `rgba(${rgb},0.95)`; context.stroke();
+    context.lineWidth = Math.max(1.5, radius * 0.16); context.strokeStyle = `rgba(${rgb},0.95)`; context.stroke();
     context.beginPath(); context.arc(0, 0, radius * 0.34, 0, Math.PI * 2);
     context.fillStyle = `rgba(${rgb},0.92)`; context.fill();
     context.restore();

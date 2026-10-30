@@ -1,0 +1,32 @@
+{
+  "steps": [
+    {
+      "name": "mod",
+      "data": {
+        "loaded": "loaded",
+        "version": "0.6.7"
+      }
+    },
+    {
+      "name": "preview",
+      "data": {
+        "canvas": {
+          "width": 819,
+          "height": 460
+        },
+        "viewScale": 0.5111111111111111,
+        "line1": {
+          "scaleX": 1,
+          "alpha": 255
+        }
+      }
+    }
+  ],
+  "exceptions": [],
+  "result": {
+    "version": "0.6.7",
+    "previewScale": 0.5111111111111111,
+    "exceptions": 0,
+    "ok": true
+  }
+}

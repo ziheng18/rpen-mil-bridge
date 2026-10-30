@@ -6,14 +6,14 @@
     "zh-CN": "Milthm 自制谱桥接",
     "en-US": "Milthm fmt=2 Bridge"
   },
-  "version": "0.6.6",
+  "version": "0.6.7",
   "author": {
     "zh-CN": "可行性验证原型",
     "en-US": "Feasibility prototype"
   },
   "description": {
-    "zh-CN": "在 RPEN 中导入/编辑/导出 Milthm 自制谱（fmt=2），轨道式。v0.6.6：新增「全局流速（预览，同播放器 FLOW_SPEED）」设置（默认 1.66，范围 0.8–2.4，与渲染器同值同义，只影响预览落速，不改谱面数据与导出）。v0.6.5：新建谱 Track 0 不透明度初始化 255（2/8/9 各一条 0 拍起 1 拍），新增线同三条但值为 0。v0.6.4：修复新增/批量增加判定线后「初始化事件列」死循环。v0.6.3：不透明度事件（2/8/9/13）钩定状态跨提交保持。v0.6.2：缺失线透明度轨道补「0 拍起 1 拍 0」+「最早事件拍 255」两条初始化，导出过滤。",
-    "en-US": "Import/edit/export Milthm fan charts (fmt=2) in RPEN. Track-based: each judge line = one Milthm track, notes locked to track center (positionX=0). v0.6.6 adds a preview-only global flow speed setting using the renderer FLOW_SPEED convention (default 1.66, range 0.8-2.4; same number = same falling speed; chart data and export unchanged). Export commands produce Milthm chart.json / package zip."
+    "zh-CN": "在 RPEN 中导入/编辑/导出 Milthm 自制谱（fmt=2），轨道式。v0.6.7：预览判定头半径按「音符大小」放大（15→29 世界单位，直径约等于音符直径；样式保持原样等比缩放）。v0.6.6：新增「全局流速（预览，同播放器 FLOW_SPEED）」设置（默认 1.66，范围 0.8–2.4，只影响预览落速，不改谱面/导出）。v0.6.5：新建谱 Track 0 不透明度初始化 255（2/8/9），新增线同三条但值为 0。v0.6.4：修复新增/批量增加判定线后初始化死循环。v0.6.3：不透明度事件（2/8/9/13）钩定状态跨提交保持。",
+    "en-US": "Import/edit/export Milthm fan charts (fmt=2) in RPEN. Track-based: each judge line = one Milthm track, notes locked to track center (positionX=0). v0.6.7 enlarges the preview judgement head to note size (radius 15 -> 29 world units, diameter ≈ the renderer note diameter; style unchanged, scaled proportionally). Export commands produce Milthm chart.json / package zip."
   },
   "entry": "main.mjs",
   "settings": {

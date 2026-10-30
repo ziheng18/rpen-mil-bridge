@@ -4,7 +4,7 @@
       "name": "mod",
       "data": {
         "loaded": "loaded",
-        "version": "0.6.6"
+        "version": "0.6.7"
       }
     },
     {
@@ -254,7 +254,7 @@
   ],
   "exceptions": [],
   "result": {
-    "version": "0.6.6",
+    "version": "0.6.7",
     "addedLines": 20,
     "commitCountAfterAdd": 1,
     "addedLineHasStash": true,
