@@ -272,6 +272,17 @@ export async function activate(api) {
     if (base) return base;
     return semantics.flowSpeed ?? [];
   };
+  // convert.mjs keeps RPE rotation = 90 - Milthm rotation (the counterclockwise angle RPU uses),
+  // but RPEN's positive rotation is clockwise on screen. The scene needs the on-screen angle,
+  // i.e. Milthm theta - 90 = -stored (or stored - 180 when Y is flipped). Preview only.
+  const previewRotateEvents = (events, currentSettings) => {
+    const flipY = currentSettings['flip-y'] === true;
+    return (events ?? []).map(event => ({
+      ...event,
+      start: flipY ? Number(event.start) - 180 : -Number(event.start),
+      end: flipY ? Number(event.end) - 180 : -Number(event.end),
+    }));
+  };
   const dimTrack = chart => {
     const cache = cacheFor(chart);
     if (cache.dim !== undefined) return cache.dim;
@@ -392,6 +403,7 @@ export async function activate(api) {
     // semantic X/Y/rotation/speed/size lists. Swap them in just for the compile call so
     // LineRuntime builds its tracks from the semantic data, then restore the display arrays.
     const restores = [];
+    const currentSettings = settings();
     for (const line of (chart.judgeLineList ?? [])) {
       const layer = line?.eventLayers?.[0];
       if (!layer) continue;
@@ -402,6 +414,7 @@ export async function activate(api) {
       injected.speedEvents = flow === 1
         ? previewSpeed
         : previewSpeed.map(event => ({ ...event, start: Number(event.start) * flow, end: Number(event.end) * flow }));
+      injected.rotateEvents = previewRotateEvents(injected.rotateEvents, currentSettings);
       restores.push({ line, layer, extended: line.extended,
         arrays: { moveXEvents: layer.moveXEvents, moveYEvents: layer.moveYEvents, rotateEvents: layer.rotateEvents, alphaEvents: layer.alphaEvents, speedEvents: layer.speedEvents } });
       layer.moveXEvents = injected.moveXEvents;

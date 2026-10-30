@@ -4,7 +4,7 @@
       "name": "mod",
       "data": {
         "loaded": "loaded",
-        "version": "0.6.8"
+        "version": "0.6.9"
       }
     },
     {
@@ -35,7 +35,7 @@
   ],
   "exceptions": [],
   "result": {
-    "version": "0.6.8",
+    "version": "0.6.9",
     "floors": [
       840.3750000000001,
       840.3750000000001,

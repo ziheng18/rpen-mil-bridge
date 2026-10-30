@@ -1,0 +1,99 @@
+{
+  "steps": [
+    {
+      "name": "mod",
+      "data": {
+        "loaded": "loaded",
+        "version": "0.6.9"
+      }
+    },
+    {
+      "name": "preview",
+      "data": {
+        "stored": [
+          [
+            30
+          ],
+          [
+            -30
+          ],
+          [
+            150
+          ]
+        ],
+        "scene": [
+          {
+            "rotation": -30,
+            "noteLocalY": 420.1875
+          },
+          {
+            "rotation": 30,
+            "noteLocalY": 420.1875
+          },
+          {
+            "rotation": -150,
+            "noteLocalY": 420.1875
+          }
+        ]
+      }
+    }
+  ],
+  "exceptions": [],
+  "result": {
+    "version": "0.6.9",
+    "storedRotations": [
+      [
+        30
+      ],
+      [
+        -30
+      ],
+      [
+        150
+      ]
+    ],
+    "sceneRotations": [
+      -30,
+      30,
+      -150
+    ],
+    "expectedRotations": [
+      -30,
+      30,
+      -150
+    ],
+    "noteDirections": [
+      {
+        "x": -0.49999999999999994,
+        "y": -0.8660254037844386
+      },
+      {
+        "x": 0.49999999999999994,
+        "y": -0.8660254037844386
+      },
+      {
+        "x": -0.49999999999999994,
+        "y": 0.8660254037844386
+      }
+    ],
+    "expectedDirections": [
+      {
+        "x": -0.5000000000000001,
+        "y": -0.8660254037844386
+      },
+      {
+        "x": 0.4999999999999998,
+        "y": -0.8660254037844387
+      },
+      {
+        "x": -0.5000000000000001,
+        "y": 0.8660254037844386
+      }
+    ],
+    "rotationOk": true,
+    "directionOk": true,
+    "storedUnchanged": true,
+    "exceptions": 0,
+    "ok": true
+  }
+}
