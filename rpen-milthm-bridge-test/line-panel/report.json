@@ -4,7 +4,7 @@
       "name": "mod",
       "data": {
         "loaded": "loaded",
-        "version": "0.6.4"
+        "version": "0.6.5"
       }
     },
     {
@@ -26,9 +26,56 @@
         ],
         "addedLineHasStash": true,
         "addedLineHasEvents": true,
-        "addedLineSemantics": {
+        "addedLineAlpha": {
+          "lineAlpha": [
+            {
+              "startTime": [
+                0,
+                0,
+                1
+              ],
+              "endTime": [
+                0,
+                1,
+                1
+              ],
+              "start": 0,
+              "end": 0
+            }
+          ],
+          "bodyAlpha": [
+            {
+              "startTime": [
+                0,
+                0,
+                1
+              ],
+              "endTime": [
+                0,
+                1,
+                1
+              ],
+              "start": 0,
+              "end": 0
+            }
+          ],
+          "headAlpha": [
+            {
+              "startTime": [
+                0,
+                0,
+                1
+              ],
+              "endTime": [
+                0,
+                1,
+                1
+              ],
+              "start": 0,
+              "end": 0
+            }
+          ],
           "x": 1,
-          "bodyAlpha": 1,
           "flowSpeed": 1
         }
       }
@@ -86,14 +133,134 @@
           }
         ]
       }
+    },
+    {
+      "name": "new chart line 0",
+      "data": {
+        "kind": "milthm-fmt2",
+        "lines": 1,
+        "line0": {
+          "lineAlpha": [
+            {
+              "startTime": [
+                0,
+                0,
+                1
+              ],
+              "endTime": [
+                0,
+                1,
+                1
+              ],
+              "start": 1,
+              "end": 1
+            }
+          ],
+          "bodyAlpha": [
+            {
+              "startTime": [
+                0,
+                0,
+                1
+              ],
+              "endTime": [
+                0,
+                1,
+                1
+              ],
+              "start": 1,
+              "end": 1
+            }
+          ],
+          "headAlpha": [
+            {
+              "startTime": [
+                0,
+                0,
+                1
+              ],
+              "endTime": [
+                0,
+                1,
+                1
+              ],
+              "start": 1,
+              "end": 1
+            }
+          ],
+          "x": 1,
+          "flowSpeed": 1
+        }
+      }
+    },
+    {
+      "name": "new chart line 1",
+      "data": {
+        "lines": 2,
+        "line1": {
+          "lineAlpha": [
+            {
+              "startTime": [
+                0,
+                0,
+                1
+              ],
+              "endTime": [
+                0,
+                1,
+                1
+              ],
+              "start": 0,
+              "end": 0
+            }
+          ],
+          "bodyAlpha": [
+            {
+              "startTime": [
+                0,
+                0,
+                1
+              ],
+              "endTime": [
+                0,
+                1,
+                1
+              ],
+              "start": 0,
+              "end": 0
+            }
+          ],
+          "headAlpha": [
+            {
+              "startTime": [
+                0,
+                0,
+                1
+              ],
+              "endTime": [
+                0,
+                1,
+                1
+              ],
+              "start": 0,
+              "end": 0
+            }
+          ],
+          "x": 1,
+          "flowSpeed": 1
+        }
+      }
     }
   ],
   "exceptions": [],
   "result": {
-    "version": "0.6.4",
+    "version": "0.6.5",
     "addedLines": 20,
     "commitCountAfterAdd": 1,
     "addedLineHasStash": true,
+    "addedLineZeroInit": true,
+    "newChartTrack0OpaqueInit": true,
+    "newChartAddedLineZeroInit": true,
     "panelMoves": 6,
     "exceptions": 0,
     "ok": true

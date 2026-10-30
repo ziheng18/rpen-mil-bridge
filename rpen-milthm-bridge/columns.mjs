@@ -306,13 +306,22 @@ export function chartColumns(chart) {
 /**
  * Build the Milthm stash for a line that has none (e.g. a plain RPE line added with
  * "新增判定线" / "批量增加" on a Milthm chart). Such a line becomes a regular track:
- * X/Y/rotation/flow-speed/size come from its native events, its RPEN alpha track becomes
- * LineBodyTransparency(8) (the default slot 3 semantics), matching what
- * main.mjs `buildMilthmChart()` does for a brand-new chart.
+ * X/Y/rotation/flow-speed/size come from its native events.
+ *
+ * Opacity initialisation (v0.6.5): all three Milthm line-alpha channels (整体
+ * Transparency 2 / 线身 LineBody 8 / 线头 LineHead 9) get one 1-beat event starting at
+ * beat 0. The default line (index 0, "Track 0") is initialised to 255 (opaque, same as a
+ * brand-new chart); lines added later (index >= 1) are initialised to 0 (transparent) so
+ * they start hidden until animated in.
  */
 function stashForPlainLine(line, index) {
   const layer = line?.eventLayers?.[0] ?? {};
   const extended = line?.extended ?? {};
+  const alphaValue = index === 0 ? 1 : 0;
+  const alphaInit = type => ({
+    type, startTime: [0, 0, 1], endTime: [0, 1, 1], start: alphaValue, end: alphaValue,
+    ease: { type: 0, press: 0, isValueExp: false, cusValueExp: '', clipLeft: 0, clipRight: 1 },
+  });
   return {
     sourceIndex: index,
     rawExtras: [],
@@ -326,9 +335,10 @@ function stashForPlainLine(line, index) {
       flowSpeed: cloneEvents(layer.speedEvents),
       speed: [], flowRaw: [],
       size: cloneEvents(extended.scaleXEvents),
-      lineAlpha: [],
-      bodyAlpha: carrierEventsToRaw(layer.alphaEvents ?? [], MIL_ANIM.LINE_BODY_TRANSPARENCY),
-      headAlpha: [], wholeAlpha: [], legacy: [],
+      lineAlpha: [alphaInit(MIL_ANIM.TRANSPARENCY)],
+      bodyAlpha: [alphaInit(MIL_ANIM.LINE_BODY_TRANSPARENCY)],
+      headAlpha: [alphaInit(MIL_ANIM.LINE_HEAD_TRANSPARENCY)],
+      wholeAlpha: [], legacy: [],
     },
   };
 }

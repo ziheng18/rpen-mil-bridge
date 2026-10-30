@@ -93,10 +93,16 @@ try {
   step('before add', await evaluate(`(() => ({ lines: window.rpenMods.editor.chart.judgeLineList.length, undo: window.rpenMods.editor.session.history.undoStack.length, commits: (window.__probeCommits = []).length }))()`));
   const addClick = await clickInspectorButton('＋ 新增');
   await sleep(2000);
+  const alphaSummaryScript = `(line => {
+    const events = line?.['x-milthm']?.events;
+    const read = key => (events?.[key] ?? []).map(event => ({ startTime: event.startTime, endTime: event.endTime, start: event.start, end: event.end }));
+    return { lineAlpha: read('lineAlpha'), bodyAlpha: read('bodyAlpha'), headAlpha: read('headAlpha'), x: (events?.x ?? []).length, flowSpeed: (events?.flowSpeed ?? []).length };
+  })`;
   step('after add', await evaluate(`(() => {
     const chart = window.rpenMods.editor.chart;
     const added = chart.judgeLineList[chart.judgeLineList.length - 1];
     const commits = window.__probeCommits ?? [];
+    const alphaSummary = ${alphaSummaryScript};
     return {
       lines: chart.judgeLineList.length,
       undo: window.rpenMods.editor.session.history.undoStack.length,
@@ -104,11 +110,7 @@ try {
       commitLabels: commits.map(entry => entry.label),
       addedLineHasStash: Boolean(added?.['x-milthm']),
       addedLineHasEvents: Boolean(added?.['x-milthm']?.events),
-      addedLineSemantics: added?.['x-milthm']?.events ? {
-        x: added['x-milthm'].events.x?.length ?? 0,
-        bodyAlpha: added['x-milthm'].events.bodyAlpha?.length ?? 0,
-        flowSpeed: added['x-milthm'].events.flowSpeed?.length ?? 0,
-      } : null,
+      addedLineAlpha: alphaSummary(added),
     };
   })()`));
   step('add click', addClick);
@@ -128,19 +130,51 @@ try {
   }
   step('responsiveness', { moved, attempts: attempts.length, details: attempts });
 
+  // 3) opacity initialisation on a brand-new Milthm chart: Track 0 = 255, added lines = 0.
+  step('new chart line 0', await evaluate(`(async () => {
+    const command = window.rpenMods.manager.runtime.commands.get('milthm-fmt2-bridge:new-milthm-chart');
+    await command.run();
+    await new Promise(resolve => setTimeout(resolve, 900));
+    const chart = window.rpenMods.editor.chart;
+    const alphaSummary = ${alphaSummaryScript};
+    return { kind: chart?.['x-milthm']?.kind, lines: chart?.judgeLineList?.length, line0: alphaSummary(chart?.judgeLineList?.[0]) };
+  })()`));
+  await evaluate(`[...document.querySelectorAll('button')].find(el => (el.textContent || '').trim() === '判定线')?.click()`);
+  await sleep(600);
+  await clickInspectorButton('＋ 新增');
+  await sleep(1200);
+  step('new chart line 1', await evaluate(`(() => {
+    const chart = window.rpenMods.editor.chart;
+    const alphaSummary = ${alphaSummaryScript};
+    return { lines: chart?.judgeLineList?.length, line1: alphaSummary(chart?.judgeLineList?.[1]) };
+  })()`));
+
   const scroll = await send('Page.captureScreenshot', { format: 'png' });
   fs.writeFileSync(path.join(OUT, 'editor-line-panel.png'), Buffer.from(scroll.data, 'base64'));
 
   const data = name => report.steps.find(entry => entry.name === name)?.data ?? {};
+  const oneBeatAtZero = events => Array.isArray(events) && events.length === 1
+    && JSON.stringify(events[0].startTime) === JSON.stringify([0, 0, 1])
+    && JSON.stringify(events[0].endTime) === JSON.stringify([0, 1, 1]);
+  const isOpaqueInit = events => oneBeatAtZero(events) && Number(events[0].start) === 1;
+  const isTransparentInit = events => oneBeatAtZero(events) && Number(events[0].start) === 0;
+  const addedAlpha = data('after add').addedLineAlpha ?? {};
+  const line0Alpha = data('new chart line 0').line0 ?? {};
+  const line1Alpha = data('new chart line 1').line1 ?? {};
   const result = {
     version: data('mod').version,
     addedLines: data('after add').lines,
     commitCountAfterAdd: data('after add').commitCount2s,
     addedLineHasStash: data('after add').addedLineHasStash && data('after add').addedLineHasEvents,
+    addedLineZeroInit: isTransparentInit(addedAlpha.lineAlpha) && isTransparentInit(addedAlpha.bodyAlpha) && isTransparentInit(addedAlpha.headAlpha),
+    newChartTrack0OpaqueInit: isOpaqueInit(line0Alpha.lineAlpha) && isOpaqueInit(line0Alpha.bodyAlpha) && isOpaqueInit(line0Alpha.headAlpha),
+    newChartAddedLineZeroInit: isTransparentInit(line1Alpha.lineAlpha) && isTransparentInit(line1Alpha.bodyAlpha) && isTransparentInit(line1Alpha.headAlpha),
     panelMoves: data('responsiveness').moved,
     exceptions: exceptions.length,
   };
-  result.ok = result.addedLines === 20 && result.commitCountAfterAdd <= 3 && result.addedLineHasStash && result.panelMoves === 6 && result.exceptions === 0;
+  result.ok = result.addedLines === 20 && result.commitCountAfterAdd <= 3 && result.addedLineHasStash
+    && result.addedLineZeroInit && result.newChartTrack0OpaqueInit && result.newChartAddedLineZeroInit
+    && result.panelMoves === 6 && result.exceptions === 0;
   report.result = result;
   fs.writeFileSync(path.join(OUT, 'report.json'), JSON.stringify(report, null, 2));
   console.log('RESULT', JSON.stringify(result, null, 1));

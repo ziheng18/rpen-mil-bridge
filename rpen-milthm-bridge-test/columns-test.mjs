@@ -145,12 +145,23 @@ function semanticDiff(exported, label) {
   };
   const withLine = { ...synced, judgeLineList: [...synced.judgeLineList, plainLine] };
   const initialised = ensureChartColumns(withLine);
+  const alphaInitOk = (events, value, label) => {
+    if (!Array.isArray(events) || events.length !== 1) { failures.push(`ensure: ${label} init count ${events?.length} != 1`); return; }
+    const [event] = events;
+    if (Number(event.start) !== value || Number(event.end) !== value) failures.push(`ensure: ${label} init value ${event.start}/${event.end} != ${value}`);
+    if (JSON.stringify(event.startTime) !== JSON.stringify([0, 0, 1]) || JSON.stringify(event.endTime) !== JSON.stringify([0, 1, 1])) {
+      failures.push(`ensure: ${label} init time ${JSON.stringify(event.startTime)}->${JSON.stringify(event.endTime)} != 0:0/1->0:1/1`);
+    }
+  };
   if (!initialised) failures.push('ensure: plain line was not initialised');
   else {
     const added = initialised.judgeLineList[19];
     if (!added['x-milthm']?.events) failures.push('ensure: added line has no x-milthm stash/events');
     if (added['x-milthm']?.events?.x?.length !== 1) failures.push('ensure: added line X semantics missing');
-    if (added['x-milthm']?.events?.bodyAlpha?.length !== 1) failures.push('ensure: added line alpha semantics missing');
+    // v0.6.5: added lines (index >= 1) initialise 整体(2)/线身(8)/线头(9) to 0 (transparent), 1 beat from beat 0.
+    alphaInitOk(added['x-milthm']?.events?.lineAlpha, 0, 'added line lineAlpha');
+    alphaInitOk(added['x-milthm']?.events?.bodyAlpha, 0, 'added line bodyAlpha');
+    alphaInitOk(added['x-milthm']?.events?.headAlpha, 0, 'added line headAlpha');
     if (ensureChartColumns(initialised)) failures.push('ensure: not idempotent (second pass still reports changes) => commit loop risk');
     const committed = normalizeLaneChart(syncMilthmColumns(initialised), {});
     if (ensureChartColumns(committed)) failures.push('ensure: still needs init after the commit pipeline => commit loop risk');
@@ -159,7 +170,24 @@ function semanticDiff(exported, label) {
     else {
       const count = (exported.lines[19].animations ?? []).length;
       if (!count) failures.push('export: added line exported without animations');
+      const alphaTypes = (exported.lines[19].animations ?? []).filter(animation => [2, 8, 9].includes(Number(animation.type)));
+      if (alphaTypes.length !== 3) failures.push('export: added line should export 3 opacity animations (2/8/9), got ' + alphaTypes.length);
+      for (const animation of alphaTypes) if (Number(animation.start) !== 0 || Number(animation.end) !== 0) failures.push(`export: added line type ${animation.type} init not 0`);
       console.log('plain line init -> stash ok, second pass null, exported animations:', count);
+    }
+  }
+  // A plain line at index 0 (the chart default track) initialises to 255 instead of 0.
+  {
+    const defaultChart = { META: { RPEVersion: 240 }, BPMList: [{ bpm: 120, startTime: [0, 0, 1] }],
+      'x-milthm': { kind: 'milthm-fmt2', columns: ['x', 'y', 'rotate', 'bodyAlpha', 'flowSpeed'] }, judgeLineList: [structuredClone(plainLine)] };
+    const initialisedDefault = ensureChartColumns(defaultChart);
+    if (!initialisedDefault) failures.push('ensure: default plain line was not initialised');
+    else {
+      const events = initialisedDefault.judgeLineList[0]['x-milthm']?.events;
+      alphaInitOk(events?.lineAlpha, 1, 'line-0 lineAlpha');
+      alphaInitOk(events?.bodyAlpha, 1, 'line-0 bodyAlpha');
+      alphaInitOk(events?.headAlpha, 1, 'line-0 headAlpha');
+      console.log('line-0 plain line -> 2/8/9 initialised to 255');
     }
   }
 }

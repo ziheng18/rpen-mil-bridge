@@ -968,6 +968,11 @@ export async function activate(api) {
     // per base track (X=0, Y=0, rotation=0, alpha=255, speed=10). No zero-length events.
     const rpeEvent = value => ({ startTime: [0, 0, 1], endTime: [0, 1, 1], start: value, end: value,
       easingType: 1, easingLeft: 0, easingRight: 1, bezier: 0, bezierPoints: [0, 0, 1, 1], linkgroup: 0 });
+    // v0.6.5: Track 0 opacity is explicitly initialised to 255 on all three Milthm line-alpha
+    // channels (整体 Transparency 2 / 线身 LineBody 8 / 线头 LineHead 9), 1 beat from beat 0.
+    // Lines added later are initialised to 0 (transparent) the same way (see columns.mjs).
+    const alphaInit = type => ({ type, startTime: [0, 0, 1], endTime: [0, 1, 1], start: 1, end: 1,
+      ease: { type: 0, press: 0, isValueExp: false, cusValueExp: '', clipLeft: 0, clipRight: 1 } });
     const line = {
       Group: 0, Name: 'Track 0', Texture: 'line.png', anchor: [0.5, 0.5],
       bpmfactor: 1, father: -1, rotateWithFather: true, isCover: 1, isGif: false, zOrder: 0,
@@ -981,15 +986,13 @@ export async function activate(api) {
         channels: { bodyAlpha: [], headAlpha: [], wholeAlpha: [], flowSpeed: [] },
         primaryAlphaType: MIL_ANIM.LINE_BODY_TRANSPARENCY,
         primarySpeedType: MIL_ANIM.FLOW_SPEED,
-        // RPEN-style semantics: the line's alpha is opaque (255). Milthm's extra head/whole
-        // tracks stay empty here (preview keeps their Rain Editor defaults) and no synthetic
-        // zero-length events are written for a new chart.
         events: {
           x: [rpeEvent(0)], y: [rpeEvent(0)], rotate: [rpeEvent(0)],
           flowSpeed: [rpeEvent(10)], speed: [], flowRaw: [], size: [],
-          lineAlpha: [], bodyAlpha: [{ type: MIL_ANIM.LINE_BODY_TRANSPARENCY, startTime: [0, 0, 1], endTime: [0, 1, 1], start: 1, end: 1,
-            ease: { type: 0, press: 0, isValueExp: false, cusValueExp: '', clipLeft: 0, clipRight: 1 } }],
-          headAlpha: [], wholeAlpha: [], legacy: [],
+          lineAlpha: [alphaInit(MIL_ANIM.TRANSPARENCY)],
+          bodyAlpha: [alphaInit(MIL_ANIM.LINE_BODY_TRANSPARENCY)],
+          headAlpha: [alphaInit(MIL_ANIM.LINE_HEAD_TRANSPARENCY)],
+          wholeAlpha: [], legacy: [],
         },
       },
     };
