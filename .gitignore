@@ -1,0 +1,19 @@
+# 外部参考/克隆，不纳入本仓库
+/analyze/rpe-next/
+/extracted/
+/raineditor-test/
+
+# 大型谱面/媒体输入，不纳入版本库
+*.pez
+*.zip
+
+# 测试产生的下载与临时输出
+**/downloads/
+rpen-milthm-bridge-test/out/
+
+# 其它生成物
+*.log
+**/node_modules/
+# 研究用 RPU 源码克隆（外部仓库）
+/analyze/rpu-research/RainPlayerUnity/
+

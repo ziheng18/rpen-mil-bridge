@@ -1,0 +1,128 @@
+{
+  "steps": [
+    {
+      "name": "mod",
+      "data": {
+        "loaded": "loaded",
+        "errors": []
+      }
+    },
+    {
+      "name": "import",
+      "data": {
+        "lines": 19,
+        "notes": 639,
+        "nonZeroX": 0
+      }
+    },
+    {
+      "name": "ui",
+      "data": {
+        "timelineSelect": true,
+        "timelineOptions": [
+          "line-body-alpha",
+          "line-head-alpha",
+          "line-whole-alpha",
+          "line-flow-speed",
+          "line-size",
+          "note-alpha",
+          "background-dim"
+        ],
+        "panel": true,
+        "panelVisible": true,
+        "panelOptions": [
+          "line-body-alpha",
+          "line-head-alpha",
+          "line-whole-alpha",
+          "line-flow-speed",
+          "line-size",
+          "note-alpha",
+          "background-dim"
+        ]
+      }
+    },
+    {
+      "name": "channel add",
+      "data": {
+        "before": 0,
+        "after": 1,
+        "dirty": true
+      }
+    },
+    {
+      "name": "exnote",
+      "data": {
+        "found": true,
+        "value": "1",
+        "isAlwaysPerfect": true
+      }
+    },
+    {
+      "name": "dim global",
+      "data": {
+        "events": 1,
+        "dirty": true
+      }
+    },
+    {
+      "name": "export",
+      "data": {
+        "name": "Class Memories",
+        "entries": [
+          "chart.json",
+          "audio.mp3",
+          "image.png",
+          "res/black.png",
+          "meta.json"
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "name": "downloads",
+      "data": [
+        {
+          "name": "Class Memories.zip",
+          "size": 5385875
+        }
+      ]
+    },
+    {
+      "name": "exported zip",
+      "data": {
+        "entries": [
+          "chart.json",
+          "audio.mp3",
+          "image.png",
+          "res/black.png",
+          "meta.json"
+        ],
+        "storyboards": [
+          {
+            "index": 0,
+            "type": 0,
+            "layer": 1,
+            "data": "black.png",
+            "animations": 1
+          }
+        ],
+        "blackPng": 44114,
+        "exNoteFlags": 13
+      }
+    },
+    {
+      "name": "dim migration",
+      "data": {
+        "dimEvents": 1,
+        "storyboards": 0,
+        "storyboardData": []
+      }
+    }
+  ],
+  "events": [
+    {
+      "kind": "download",
+      "suggested": "Class Memories.zip"
+    }
+  ]
+}

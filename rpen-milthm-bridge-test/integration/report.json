@@ -1,0 +1,161 @@
+{
+  "steps": [
+    {
+      "name": "boot",
+      "data": {
+        "records": [
+          "sky-dodge",
+          "pixel-miner",
+          "spatial-camera",
+          "rpen-mod-market"
+        ],
+        "home": true
+      }
+    },
+    {
+      "name": "mod installed",
+      "data": {
+        "records": [
+          "sky-dodge",
+          "pixel-miner",
+          "spatial-camera",
+          "rpen-mod-market",
+          "milthm-fmt2-bridge"
+        ],
+        "loaded": "loaded",
+        "commands": [
+          "milthm-fmt2-bridge:export-json",
+          "milthm-fmt2-bridge:export-zip"
+        ],
+        "panel": true
+      }
+    },
+    {
+      "name": "imported chart",
+      "data": {
+        "chartName": "chart.json",
+        "lines": 19,
+        "notes": 639,
+        "nonZeroX": 0,
+        "noteTypes": {
+          "1": 320,
+          "2": 27,
+          "4": 292
+        },
+        "marker": "milthm-fmt2",
+        "meta": {
+          "name": "Class Memories",
+          "offset": -90,
+          "level": "Cloudburst 8"
+        },
+        "audioDuration": null,
+        "panelVisible": true,
+        "panelText": "Milthm fmt=2 模式\n导出 chart.j on\n导出谱面包 zip\n19 轨道 / 639 音符 · 音符 X 锁定为 0"
+      }
+    },
+    {
+      "name": "media bind",
+      "data": {
+        "song": "audio.mp3",
+        "background": "image.png",
+        "dirty": true
+      }
+    },
+    {
+      "name": "audio",
+      "data": {
+        "duration": 147.36979591836734
+      }
+    },
+    {
+      "name": "status",
+      "data": {
+        "hasMissingMediaHint": false,
+        "tail": "9:21\n背景\nX\n缩放\n音符\n事件\n判定线\n谱面工具\n谱面工具\n剪贴板\n谱面\n谱面信息\nBPM 列表\n素材库\n音频分析\n生成\n曲线音符\n曲线轨迹\n文字拼合\n噪域图案\n噪域追踪\n编辑模式\n噪域编辑\n全局事件\n多线编辑\n检查与协作\n谱面检查\n编辑历史\n版本控制\nAI 辅助\n联机协作\n\naudio.mp3\n\n谱面信息\n已打开 chart.json\n绘制 0.8 ms\n已装载 1 个模组\nMilthm fmt=2 模式\n导出 chart.json\n导出谱面包 zip\n19 轨道 / 639 音符 · 音符 X 锁定为 0"
+      }
+    },
+    {
+      "name": "lane lock commit",
+      "data": {
+        "lineIndex": 1,
+        "noteCountsSame": true,
+        "positionX": 0,
+        "size": 1,
+        "bpmfactor": 1,
+        "dirty": true
+      }
+    },
+    {
+      "name": "export-json command",
+      "data": {
+        "ok": true,
+        "result": {
+          "name": "Class Memories",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "name": "export-zip command",
+      "data": {
+        "ok": true,
+        "result": {
+          "name": "Class Memories",
+          "entries": [
+            "chart.json",
+            "audio.mp3",
+            "image.png",
+            "meta.json"
+          ],
+          "warnings": []
+        }
+      }
+    },
+    {
+      "name": "downloads",
+      "data": [
+        {
+          "name": "Class Memories.json",
+          "size": 2030827
+        },
+        {
+          "name": "Class Memories.zip",
+          "size": 5339886
+        }
+      ]
+    },
+    {
+      "name": "re-import exported zip",
+      "data": {
+        "lines": 19,
+        "notes": 639,
+        "marker": "milthm-fmt2",
+        "nonZeroX": 0
+      }
+    }
+  ],
+  "events": [
+    {
+      "kind": "log",
+      "level": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://www.chromium.org/developers/design-documents/create-amazing-password-forms) %o"
+    },
+    {
+      "kind": "log",
+      "level": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    },
+    {
+      "kind": "download",
+      "suggested": "Class Memories.json"
+    },
+    {
+      "kind": "download",
+      "suggested": "Class Memories.zip"
+    }
+  ],
+  "eventCounts": {
+    "log": 2,
+    "download": 2
+  }
+}

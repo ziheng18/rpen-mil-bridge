@@ -1,0 +1,182 @@
+{
+  "steps": [
+    {
+      "name": "mod",
+      "data": {
+        "loaded": "loaded",
+        "version": "0.6.2"
+      }
+    },
+    {
+      "name": "import",
+      "data": {
+        "lines": 19,
+        "columns": [
+          "x",
+          "y",
+          "rotate",
+          "bodyAlpha",
+          "flowSpeed"
+        ],
+        "bodyAlpha": 12,
+        "flowSpeed": 1,
+        "x": 5
+      }
+    },
+    {
+      "name": "overlay",
+      "data": {
+        "overlay": true,
+        "display": "flex",
+        "rect": {
+          "left": 566,
+          "top": 186,
+          "width": 518,
+          "height": 23
+        },
+        "slots": [
+          {
+            "value": "x",
+            "options": [
+              "x",
+              "y",
+              "rotate",
+              "flowSpeed",
+              "size",
+              "bodyAlpha",
+              "headAlpha",
+              "wholeAlpha"
+            ]
+          },
+          {
+            "value": "y",
+            "options": [
+              "x",
+              "y",
+              "rotate",
+              "flowSpeed",
+              "size",
+              "bodyAlpha",
+              "headAlpha",
+              "wholeAlpha"
+            ]
+          },
+          {
+            "value": "rotate",
+            "options": [
+              "x",
+              "y",
+              "rotate",
+              "flowSpeed",
+              "size",
+              "bodyAlpha",
+              "headAlpha",
+              "wholeAlpha"
+            ]
+          },
+          {
+            "value": "bodyAlpha",
+            "options": [
+              "lineAlpha",
+              "bodyAlpha",
+              "headAlpha",
+              "wholeAlpha"
+            ]
+          },
+          {
+            "value": "flowSpeed",
+            "options": [
+              "x",
+              "y",
+              "rotate",
+              "flowSpeed",
+              "size",
+              "bodyAlpha",
+              "headAlpha",
+              "wholeAlpha"
+            ]
+          }
+        ],
+        "panelRemoved": true,
+        "oldSelectRemoved": true
+      }
+    },
+    {
+      "name": "remap",
+      "data": {
+        "afterHead": [
+          "x",
+          "y",
+          "rotate",
+          "headAlpha",
+          "flowSpeed"
+        ],
+        "afterBack": [
+          "x",
+          "y",
+          "rotate",
+          "bodyAlpha",
+          "flowSpeed"
+        ],
+        "displayedValue": "bodyAlpha"
+      }
+    },
+    {
+      "name": "export command",
+      "data": {
+        "name": "Class Memories",
+        "warnings": []
+      }
+    },
+    {
+      "name": "json download",
+      "data": {
+        "files": [
+          "Class Memories.json"
+        ]
+      }
+    },
+    {
+      "name": "semantic diffs",
+      "data": {
+        "count": 0,
+        "diffs": []
+      }
+    },
+    {
+      "name": "export dialog",
+      "data": {
+        "open": true,
+        "options": [
+          "next:json",
+          "next:pez",
+          "rpe:json",
+          "rpe:pez",
+          "milthm:json",
+          "milthm:zip"
+        ]
+      }
+    },
+    {
+      "name": "export dialog download",
+      "data": {
+        "files": [
+          "Class Memories (2).json",
+          "Class Memories.json"
+        ],
+        "added": 1
+      }
+    }
+  ],
+  "events": [
+    {
+      "kind": "download",
+      "suggested": "Class Memories.json"
+    },
+    {
+      "kind": "download",
+      "suggested": "Class Memories (2).json"
+    }
+  ],
+  "ok": true
+}

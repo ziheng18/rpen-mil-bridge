@@ -1,0 +1,146 @@
+{
+  "protocol": "rpen-mod",
+  "api": 1,
+  "id": "milthm-fmt2-bridge",
+  "name": {
+    "zh-CN": "Milthm 自制谱桥接",
+    "en-US": "Milthm fmt=2 Bridge"
+  },
+  "version": "0.6.2",
+  "author": {
+    "zh-CN": "可行性验证原型",
+    "en-US": "Feasibility prototype"
+  },
+  "description": {
+    "zh-CN": "在 RPEN 中导入/编辑/导出 Milthm 自制谱（fmt=2），轨道式。v0.6.2：缺失透明度轨道补「0拍起1拍0」+「其他透明度事件开始拍255」；缺失线透明度轨道只补「0 拍起 1 拍长、完全透明」初始化；不写 255、不写零长事件；线头/线身不互相补；新建谱按 RPEN 默认事件。",
+    "en-US": "Import/edit/export Milthm fan charts (fmt=2) in RPEN. Track-based: each judge line = one Milthm track, notes locked to track center (positionX=0). Import a Milthm chart zip via the normal Open dialog; export commands produce Milthm chart.json / package zip."
+  },
+  "entry": "main.mjs",
+  "settings": {
+    "coord-scale": {
+      "type": "number",
+      "label": {
+        "zh-CN": "坐标缩放（Milthm→RPE）",
+        "en-US": "Coordinate scale (Milthm→RPE)"
+      },
+      "default": 0.703125,
+      "min": 0.05,
+      "max": 20,
+      "step": 0.001
+    },
+    "flip-y": {
+      "type": "boolean",
+      "label": {
+        "zh-CN": "Y 轴翻转（默认关：两者都是 Y 向上）",
+        "en-US": "Flip Y (when Milthm Y is down)"
+      },
+      "default": false
+    },
+    "offset-x": {
+      "type": "number",
+      "label": {
+        "zh-CN": "X 偏移（Milthm 单位）",
+        "en-US": "X offset (Milthm units)"
+      },
+      "default": 0,
+      "min": -5000,
+      "max": 5000,
+      "step": 1
+    },
+    "offset-y": {
+      "type": "number",
+      "label": {
+        "zh-CN": "Y 偏移（Milthm 单位）",
+        "en-US": "Y offset (Milthm units)"
+      },
+      "default": 0,
+      "min": -5000,
+      "max": 5000,
+      "step": 1
+    },
+    "rotation-offset": {
+      "type": "number",
+      "label": {
+        "zh-CN": "旋转偏移（度，Milthm→RPE；90 为两者基准差）",
+        "en-US": "Rotation offset (deg, Milthm→RPE; 90 = base difference)"
+      },
+      "default": 90,
+      "min": -360,
+      "max": 360,
+      "step": 1
+    },
+    "speed-scale": {
+      "type": "number",
+      "label": {
+        "zh-CN": "流速缩放（Milthm Speed→RPE speed）",
+        "en-US": "Speed scale"
+      },
+      "default": 1.1671875,
+      "min": 0.01,
+      "max": 100,
+      "step": 0.01
+    },
+    "lane-lock": {
+      "type": "boolean",
+      "label": {
+        "zh-CN": "锁定轨道式编辑（音符 X 恒为 0）",
+        "en-US": "Lock track-based editing (note X = 0)"
+      },
+      "default": true
+    },
+    "keep-extra": {
+      "type": "boolean",
+      "label": {
+        "zh-CN": "保留无法编辑的 Milthm 数据以便原样导出",
+        "en-US": "Preserve uneditable Milthm data for export"
+      },
+      "default": true
+    },
+    "preview-tracks": {
+      "type": "boolean",
+      "label": {
+        "zh-CN": "预览里画 Milthm 轨道样式",
+        "en-US": "Draw Milthm-style tracks in preview"
+      },
+      "default": true
+    },
+    "preview-dim": {
+      "type": "boolean",
+      "label": {
+        "zh-CN": "预览背景明暗（全局事件）",
+        "en-US": "Preview background dim (global events)"
+      },
+      "default": true
+    },
+    "dim-migrate": {
+      "type": "boolean",
+      "label": {
+        "zh-CN": "导入时把纯黑立绘自动迁移为背景明暗全局事件",
+        "en-US": "Auto-migrate black storyboards to background-dim global events on import"
+      },
+      "default": true
+    },
+    "new-chart-mode": {
+      "type": "select",
+      "label": {
+        "zh-CN": "新建谱面时",
+        "en-US": "When creating a chart"
+      },
+      "default": "ask",
+      "options": {
+        "ask": {
+          "zh-CN": "询问谱面类型",
+          "en-US": "Ask chart type"
+        },
+        "rpe": {
+          "zh-CN": "直接新建普通 RPE",
+          "en-US": "Always plain RPE"
+        },
+        "milthm": {
+          "zh-CN": "直接新建 Milthm 轨道谱面",
+          "en-US": "Always Milthm track chart"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "original": {
+    "name": "Class Memories.zip",
+    "lines": 19,
+    "notes": 639,
+    "animations": 2159
+  },
+  "exported": {
+    "name": "Class Memories.json",
+    "lines": 19,
+    "notes": 639,
+    "animations": 2159
+  },
+  "diffs": [],
+  "zipReport": {
+    "name": "Class Memories.zip",
+    "entries": [
+      "chart.json",
+      "audio.mp3",
+      "image.png",
+      "meta.json"
+    ],
+    "sizes": {
+      "chart.json": 2030827,
+      "audio.mp3": 2358795,
+      "image.png": 949787,
+      "meta.json": 77
+    },
+    "meta": {
+      "chart_file": "chart.json",
+      "audio_file": "audio.mp3",
+      "image_file": "image.png"
+    },
+    "chartSameAsJsonExport": true,
+    "imageIsPng": true,
+    "audioSignature": {
+      "0": 73,
+      "1": 68,
+      "2": 51
+    }
+  }
+}
