@@ -37,3 +37,5 @@ rpen-milthm-bridge-test/out/
 
 # 构建产物：仅本地生成，发布走 GitHub Releases
 *.rpenmod
+/analyze/crop*.png
+/analyze/detail_rpen_fmt2.txt
