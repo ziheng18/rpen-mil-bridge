@@ -6,14 +6,14 @@
     "zh-CN": "Milthm 自制谱桥接",
     "en-US": "Milthm fmt=2 Bridge"
   },
-  "version": "0.7.7",
+  "version": "0.7.8",
   "author": {
     "zh-CN": "可行性验证原型",
     "en-US": "Feasibility prototype"
   },
   "description": {
-    "zh-CN": "在 RPEN 中导入/编辑/导出 Milthm 自制谱（fmt=2），轨道式。v0.7.7：预览 HUD 微调（暂停圆更大、竖杠更小更近、暂停/曲名/难度上移、All Perfect 更大、连击更小、\"100.00%\"）。v0.7.6：特殊事件层恢复 RPEN 原生、预览 HUD 按 Milthm 比例重排。v0.7.5：导入谱不透明度对齐 Rain Editor。v0.7.3：新建/新增线不透明度 255。v0.7.1：全部文字换随包 ChillRoundF（OFL-1.1）。",
-    "en-US": "Import/edit/export Milthm fan charts (fmt=2) in RPEN. Track-based: each judge line = one Milthm track. v0.7.7: preview HUD tweaks (bigger pause circle, smaller/closer bars, pause/title/difficulty moved up, bigger All Perfect, smaller combo number, \"100.00%\"). v0.7.6: native RPEN special event layer + Milthm-proportioned preview HUD. v0.7.5: imported-chart opacity follows Rain Editor. v0.7.3: new/added lines opacity 255. v0.7.1: all RPEN text uses the bundled ChillRoundF font (SIL OFL-1.1)."
+    "zh-CN": "在 RPEN 中导入/编辑/导出 Milthm 自制谱（fmt=2），轨道式。v0.7.8：导入的文字/图片故事板自动转成可编辑的文本线（文字事件）与判定线贴图（导出时还原为故事板）；多事件编辑的「事件种类」下拉只列普通（非多线、非特殊）事件层的可编辑种类；预览 HUD 微调（曲名/难度上移、暂停竖杠略高）。v0.7.7：预览 HUD 比例微调。v0.7.6：特殊事件层恢复 RPEN 原生。v0.7.5：导入谱不透明度对齐 Rain Editor。v0.7.1：全部文字换随包 ChillRoundF（OFL-1.1）。",
+    "en-US": "Import/edit/export Milthm fan charts (fmt=2) in RPEN. Track-based: each judge line = one Milthm track. v0.7.8: imported text/picture storyboards automatically become editable text lines (text events) and judgement-line textures (converted back to storyboards on export); the event-type dropdown of the batch-edit panel only lists kinds editable in the normal (non-multi-line, non-special) event layer; preview HUD tweaks (title/difficulty moved up, slightly taller pause bars). v0.7.7: HUD proportion tweaks. v0.7.6: native RPEN special event layer. v0.7.5: imported-chart opacity follows Rain Editor. v0.7.1: all RPEN text uses the bundled ChillRoundF font (SIL OFL-1.1)."
   },
   "entry": "main.mjs",
   "settings": {

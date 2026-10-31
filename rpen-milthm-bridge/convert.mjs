@@ -176,6 +176,7 @@ function eventMatchesSnapshot(event, snapshot) {
 }
 
 const MIL_ALPHA_SOURCES = [MIL_ANIM.TRANSPARENCY, MIL_ANIM.LINE_BODY_TRANSPARENCY, MIL_ANIM.WHOLE_TRANSPARENCY];
+const MIL_STORYBOARD_TYPE = { PICTURE: 0, TEXT: 1 };
 const MIL_SPEED_SOURCES = [MIL_ANIM.SPEED, MIL_ANIM.FLOW_SPEED];
 
 /* ------------------------------------------------------------------ *
@@ -327,7 +328,98 @@ export function importMilthmChart(source, settings = {}) {
     return line;
   });
 
-  if (rawStoryboards.length) warnings.push(`${rawStoryboards.length} 个 Milthm 立绘（storyboard）无法在 RPEN 预览/编辑，已暂存（导出时原样还原）`);
+  // ---- imported storyboards -> RPEN special lines (v0.7.8) ----
+  // Milthm text storyboards (type 1) become lines that draw text (extended.textEvents), picture
+  // storyboards (type 0) become lines with a custom Texture. Both then live in RPEN's special
+  // event layer and are converted back to storyboards by exportMilthmChart().
+  const beatTime = beat => {
+    const whole = Math.floor(beat);
+    return [whole, Math.round((beat - whole) * 1000000000), 1000000000];
+  };
+  const storyboardTextScaleInverse = value => Number(value) * (60.75 * tr.cfg.scale / 52);
+  const storyboardPictureScaleInverse = value => Number(value) * tr.cfg.scale;
+  const storyboardBeatOf = time => beatOf(time);
+  const convertStoryboardEvents = (list, mapper) => (list ?? [])
+    .map(raw => ({
+      startTime: clone(raw.startTime), endTime: clone(raw.endTime),
+      start: mapper(raw.start), end: mapper(raw.end),
+      easingType: milEaseToRpe(raw.ease), easingLeft: Number(raw.ease?.clipLeft ?? 0), easingRight: Number(raw.ease?.clipRight ?? 1),
+    }))
+    .sort((left, right) => beatOf(left.startTime) - beatOf(right.startTime));
+  const storyboardLines = [];
+  const leftoverStoryboards = [];
+  for (const storyboard of rawStoryboards) {
+    const sb = storyboard && typeof storyboard === 'object' ? storyboard : {};
+    const type = Number(sb.type);
+    if (type !== MIL_STORYBOARD_TYPE.PICTURE && type !== MIL_STORYBOARD_TYPE.TEXT) { leftoverStoryboards.push(clone(storyboard)); continue; }
+    const animations = (Array.isArray(sb.animations) ? sb.animations : []).filter(animation => animation && typeof animation === 'object');
+    const byType = new Map();
+    for (const animation of animations) byType.set(Number(animation.type), [...(byType.get(Number(animation.type)) ?? []), animation]);
+    const rawOf = type2 => byType.get(type2) ?? [];
+    const kind = type === MIL_STORYBOARD_TYPE.TEXT ? 'text' : 'picture';
+    const scale = kind === 'text' ? storyboardTextScaleInverse : storyboardPictureScaleInverse;
+    const moveXEvents = convertStoryboardEvents(rawOf(MIL_ANIM.POSITION_X), tr.toRpeX);
+    const moveYEvents = convertStoryboardEvents(rawOf(MIL_ANIM.POSITION_Y), tr.toRpeY);
+    const rotateEvents = convertStoryboardEvents(rawOf(MIL_ANIM.ROTATION), value => tr.toRpeRot(90 - Number(value)));
+    const scaleXEvents = convertStoryboardEvents(rawOf(MIL_ANIM.STORYBOARD_WIDTH), scale);
+    const scaleYEvents = convertStoryboardEvents(rawOf(MIL_ANIM.STORYBOARD_HEIGHT), scale);
+    const colorEvents = convertStoryboardEvents(rawOf(MIL_ANIM.COLOR), tr.toRpeColor);
+    const alphaEvents = convertStoryboardEvents(rawOf(MIL_ANIM.TRANSPARENCY), tr.toRpeAlpha);
+    const beat0 = [0, 0, 1];
+    if (!moveXEvents.length) moveXEvents.push(syntheticEvent(beat0, tr.toRpeX(0)));
+    if (!moveYEvents.length) moveYEvents.push(syntheticEvent(beat0, tr.toRpeY(0)));
+    if (!rotateEvents.length) rotateEvents.push(syntheticEvent(beat0, tr.toRpeRot(90)));
+    if (!scaleXEvents.length) scaleXEvents.push(syntheticEvent(beat0, 1));
+    if (!scaleYEvents.length) scaleYEvents.push(syntheticEvent(beat0, 1));
+    if (!alphaEvents.length) alphaEvents.push(syntheticEvent(beat0, 255));
+    let startBeat = Infinity;
+    let endBeat = -Infinity;
+    for (const animation of animations) {
+      startBeat = Math.min(startBeat, storyboardBeatOf(animation.startTime));
+      endBeat = Math.max(endBeat, storyboardBeatOf(animation.endTime));
+    }
+    if (!Number.isFinite(startBeat)) { startBeat = 0; endBeat = 0; }
+    if (!Number.isFinite(endBeat)) endBeat = startBeat;
+    const text = type === MIL_STORYBOARD_TYPE.TEXT ? String(sb.data ?? '') : '';
+    const lineIndex = lines.length;
+    const texture = kind === 'picture' ? String(sb.data ?? '').replaceAll('\\', '/').split('/').at(-1) : 'line.png';
+    const extendedLine = {
+      scaleXEvents, scaleYEvents, colorEvents,
+      inclineEvents: [], gifEvents: [],
+      ...(kind === 'text' ? { textEvents: [{
+        startTime: beatTime(startBeat), endTime: beatTime(startBeat),
+        start: text, end: text, easingType: 1, easingLeft: 0, easingRight: 1,
+      }] } : {}),
+    };
+    const line = {
+      Group: 0,
+      Name: kind === 'text' ? `Storyboard text ${sb.index ?? lineIndex}` : `Storyboard picture ${sb.index ?? lineIndex}`,
+      Texture: texture || 'line.png',
+      anchor: [0.5, 0.5], bpmfactor: 1, father: -1, rotateWithFather: true, isCover: 1, isGif: false,
+      zOrder: Number(sb.layer) === 2 ? 1000 : -1000,
+      eventLayers: [{ moveXEvents, moveYEvents, rotateEvents, alphaEvents, speedEvents: [syntheticEvent(beat0, 1)] }],
+      extended: extendedLine,
+      notes: [], numOfNotes: 0,
+      'x-milthm': {
+        sourceIndex: lineIndex,
+        rawExtras: [],
+        channels: { bodyAlpha: [], headAlpha: [], wholeAlpha: [], flowSpeed: [] },
+        primaryAlphaType: MIL_ANIM.TRANSPARENCY,
+        primarySpeedType: MIL_ANIM.FLOW_SPEED,
+        storyboardLayer: Number(sb.layer ?? 1),
+        storyboardKind: kind,
+        storyboardSource: clone({ index: sb.index, type: sb.type, layer: sb.layer, data: sb.data }),
+        storyboardSpan: { startBeat, endBeat },
+      },
+    };
+    storyboardLines.push(line);
+  }
+  if (storyboardLines.length) {
+    lines.push(...storyboardLines);
+    warnings.push(`${storyboardLines.length} 个文字/图片故事板已转换为可编辑的文本线/判定线贴图（导出时还原为故事板）`);
+  }
+  if (leftoverStoryboards.length) warnings.push(`${leftoverStoryboards.length} 个未支持的故事板（如 Mesh）仍原样暂存（导出时还原）`);
+
 
   const chart = {
     META: chartMeta,
@@ -340,7 +432,7 @@ export function importMilthmChart(source, settings = {}) {
       fmt,
       meta: clone(meta),
       importedOffsetMs,
-      storyboards: rawStoryboards,
+      storyboards: leftoverStoryboards,
     },
   };
   return { chart, warnings };
@@ -779,7 +871,7 @@ export function exportMilthmChart(chart, settings = {}) {
           const index = nextStoryboardIndex++;
           const animations = [...transformAnimations(special.line, 'text', index), ...transparencyAnimations(special.line, index, run)];
           animations.sort((left, right) => beatOf(left.startTime) - beatOf(right.startTime));
-          storyboards.push({ index, type: STORYBOARD_TYPE.TEXT, layer: 1, data: run.text, animations });
+          storyboards.push({ index, type: STORYBOARD_TYPE.TEXT, layer: Number(special.line['x-milthm']?.storyboardLayer ?? 1), data: run.text, animations });
         }
         warnings.push(`线 ${special.lineIndex}：文字已导出为 ${runs.length} 个文字故事板（type 1）`);
       } else {
@@ -787,7 +879,7 @@ export function exportMilthmChart(chart, settings = {}) {
         const index = nextStoryboardIndex++;
         const animations = [...transformAnimations(special.line, 'picture', index), ...transparencyAnimations(special.line, index, null)];
         animations.sort((left, right) => beatOf(left.startTime) - beatOf(right.startTime));
-        storyboards.push({ index, type: STORYBOARD_TYPE.PICTURE, layer: 1, data, animations });
+        storyboards.push({ index, type: STORYBOARD_TYPE.PICTURE, layer: Number(special.line['x-milthm']?.storyboardLayer ?? 1), data, animations });
         warnings.push(`线 ${special.lineIndex}：判定线贴图「${data}」已导出为图片故事板（type 0）；谱面包 zip 会自动打包到 res/${data}，单独导出 chart.json 时需自备该图片`);
       }
     }

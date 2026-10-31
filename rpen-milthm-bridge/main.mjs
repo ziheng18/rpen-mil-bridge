@@ -491,7 +491,7 @@ export async function activate(api) {
     const centerY = atY(0.082);
     const radius = size(0.0405);
     const barWidth = size(0.0062);
-    const barHeight = size(0.026);
+    const barHeight = size(0.0305);
     const gap = size(0.007);
     context.globalAlpha = 0.55;
     context.fillStyle = '#ffffff';
@@ -513,11 +513,11 @@ export async function activate(api) {
     context.globalAlpha = 0.92;
     context.fillStyle = '#ffffff';
     context.font = font(0.0377);
-    context.fillText(title, textLeft, atY(0.0776), textMaxWidth);
+    context.fillText(title, textLeft, atY(0.0735), textMaxWidth);
     if (level) {
       context.globalAlpha = 0.55;
       context.font = font(0.0266);
-      context.fillText(level, textLeft, atY(0.1131), textMaxWidth);
+      context.fillText(level, textLeft, atY(0.108), textMaxWidth);
     }
     // score in the top-right corner, faint 100% below it
     const scoreRight = atX(0.9711);
@@ -1341,8 +1341,10 @@ export async function activate(api) {
   const EXTRA_EVENT_TYPES = ['scaleXEvents', 'scaleYEvents', 'colorEvents', 'textEvents'];
   const ALL_EVENT_TYPES = [...BASE_EVENT_TYPES, ...EXTRA_EVENT_TYPES];
   let editColumnTypes = new Set(BASE_EVENT_TYPES);
+  // v0.7.8: the 事件类型 dropdown only offers the kinds editable in the normal (non-multi-line,
+  // non-special) event layer; the special layer keeps RPEN's own native kinds.
   const multiEditTypeOptions = () => isMilthmChart(editor.chart)
-    ? milthmEventTypeLabels(chartColumns(editor.chart))
+    ? [['all', '全部'], ...milthmEventTypeLabels(chartColumns(editor.chart)).slice(1, 6)]
     : (internals.multiEdit?.EVENT_BATCH_TYPES ?? null);
   // v0.7.6: only the RPEN base (non-special) event columns are selectable here; the RPEN special
   // event layer (缩放X / 缩放Y / 颜色 / 着色器 / 文字, the timeline "特殊" toggle) stays completely

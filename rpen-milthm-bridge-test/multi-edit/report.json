@@ -4,7 +4,7 @@
       "name": "mod",
       "data": {
         "loaded": "loaded",
-        "version": "0.7.7"
+        "version": "0.7.8"
       }
     },
     {
@@ -49,22 +49,6 @@
           {
             "value": "speedEvents",
             "label": "流速倍率"
-          },
-          {
-            "value": "scaleXEvents",
-            "label": "轨道大小·X（Size 3）"
-          },
-          {
-            "value": "scaleYEvents",
-            "label": "轨道大小·Y（Size 3）"
-          },
-          {
-            "value": "colorEvents",
-            "label": "轨道颜色（Color 22）"
-          },
-          {
-            "value": "textEvents",
-            "label": "轨道文字（文本事件）"
           }
         ]
       }
@@ -110,22 +94,6 @@
           {
             "value": "speedEvents",
             "label": "流速倍率"
-          },
-          {
-            "value": "scaleXEvents",
-            "label": "轨道大小·X（Size 3）"
-          },
-          {
-            "value": "scaleYEvents",
-            "label": "轨道大小·Y（Size 3）"
-          },
-          {
-            "value": "colorEvents",
-            "label": "轨道颜色（Color 22）"
-          },
-          {
-            "value": "textEvents",
-            "label": "轨道文字（文本事件）"
           }
         ]
       }
@@ -274,20 +242,25 @@
   "exceptions": [],
   "console": [],
   "result": {
-    "version": "0.7.7",
+    "version": "0.7.8",
     "defaultLabels": [
       "全部",
       "X 坐标",
       "Y 坐标",
       "旋转",
       "线体不透明度（LineBodyTransparency 8）",
-      "流速倍率",
-      "轨道大小·X（Size 3）",
-      "轨道大小·Y（Size 3）",
-      "轨道颜色（Color 22）",
-      "轨道文字（文本事件）"
+      "流速倍率"
     ],
     "defaultMatches": true,
+    "defaultKeys": [
+      "all",
+      "moveXEvents",
+      "moveYEvents",
+      "rotateEvents",
+      "alphaEvents",
+      "speedEvents"
+    ],
+    "onlyNormalLayerKinds": true,
     "paintHiddenInitially": true,
     "remappedLabelOk": true,
     "paintHiddenAfterRemap": true,

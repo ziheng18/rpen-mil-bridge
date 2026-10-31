@@ -54,9 +54,11 @@ const HEADER_LABELS = ['X 坐标', 'Y 坐标', '旋转', '轨道整体不透明�
 const CHECKBOX_LABELS = ['X 坐标', 'Y 坐标', '旋转', '轨道整体不透明度', '流速倍率'];
 const CHECKED_COLUMNS = ['moveXEvents', 'rotateEvents', 'alphaEvents', 'speedEvents'];
 const CHECKED_LABELS = ['X 坐标', '旋转', '轨道整体不透明度', '流速倍率'];
-const EXPECTED = ['全部', ...BASE_LABELS, '轨道大小·X（Size 3）', '轨道大小·Y（Size 3）', '轨道颜色（Color 22）', '轨道文字（文本事件）'];
+const EXPECTED = ['全部', ...BASE_LABELS];
+const EXPECTED_KEYS = ['all', 'moveXEvents', 'moveYEvents', 'rotateEvents', 'alphaEvents', 'speedEvents'];
 const hasPaint = options => options.some(option => option.value === 'paintEvents');
 const labelsOf = options => options.map(option => option.label);
+const keysOf = options => options.map(option => option.value);
 const readTimeline = () => evaluate(`(() => {
   const timeline = window.rpenMods.editor.timeline;
   return { eventTypes: [...(timeline?.eventTypes ?? [])], header: timeline?.__milthmHeaderLabels ?? null };
@@ -203,6 +205,8 @@ try {
     version: report.steps.find(entry => entry.name === 'mod')?.data?.version,
     defaultLabels: labelsOf(initial?.options ?? []),
     defaultMatches: JSON.stringify(labelsOf(initial?.options ?? [])) === JSON.stringify(EXPECTED),
+    defaultKeys: keysOf(initial?.options ?? []),
+    onlyNormalLayerKinds: JSON.stringify(keysOf(initial?.options ?? [])) === JSON.stringify(EXPECTED_KEYS),
     paintHiddenInitially: !hasPaint(initial?.options ?? []),
     remappedLabelOk: (remapped?.options ?? []).find(option => option.value === 'alphaEvents')?.label === REMAPPED_LABELS[3],
     paintHiddenAfterRemap: !hasPaint(remapped?.options ?? []),
@@ -222,7 +226,7 @@ try {
   };
   const visible = result.visibleSelection;
   result.visibleSelectionOk = Boolean(visible) && Object.values(visible).every(count => count > 0);
-  result.ok = Boolean(result.version) && result.defaultMatches && result.paintHiddenInitially && result.remappedLabelOk
+  result.ok = Boolean(result.version) && result.defaultMatches && result.paintHiddenInitially && result.onlyNormalLayerKinds && result.remappedLabelOk
     && result.paintHiddenAfterRemap && result.singleHeaderOk && result.checkboxLabelsOk && result.defaultColumnsOk
     && result.defaultHeaderOk && result.selectedColumnsOk && result.selectedHeaderOk && result.hiddenLocked
     && result.visibleSelectionOk

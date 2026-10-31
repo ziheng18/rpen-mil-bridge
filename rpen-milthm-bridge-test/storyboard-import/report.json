@@ -1,0 +1,131 @@
+{
+  "steps": [
+    {
+      "name": "mod",
+      "data": {
+        "loaded": "loaded",
+        "version": "0.7.8"
+      }
+    },
+    {
+      "name": "imported-lines",
+      "data": {
+        "lines": [
+          {
+            "name": "Track 0",
+            "texture": "line.png",
+            "kind": null,
+            "layer": null,
+            "textEvents": [],
+            "moveX": [
+              0
+            ],
+            "scaleX": []
+          },
+          {
+            "name": "Storyboard text 0",
+            "texture": "line.png",
+            "kind": "text",
+            "layer": 0,
+            "textEvents": [
+              {
+                "start": "HELLO",
+                "end": "HELLO",
+                "startTime": [
+                  4,
+                  0,
+                  1000000000
+                ]
+              }
+            ],
+            "moveX": [
+              70.3125
+            ],
+            "scaleX": [
+              1.2321589543269231
+            ]
+          },
+          {
+            "name": "Storyboard picture 1",
+            "texture": "tex.png",
+            "kind": "picture",
+            "layer": 2,
+            "textEvents": [],
+            "moveX": [
+              -140.625
+            ],
+            "scaleX": [
+              1.40625
+            ]
+          }
+        ],
+        "stashedStoryboards": 1,
+        "columns": [
+          "x",
+          "y",
+          "rotate",
+          "bodyAlpha",
+          "flowSpeed"
+        ],
+        "lineCount": 3
+      }
+    }
+  ],
+  "exceptions": [],
+  "result": {
+    "version": "0.7.8",
+    "lineCount": 3,
+    "columns": [
+      "x",
+      "y",
+      "rotate",
+      "bodyAlpha",
+      "flowSpeed"
+    ],
+    "textLine": {
+      "name": "Storyboard text 0",
+      "texture": "line.png",
+      "kind": "text",
+      "layer": 0,
+      "textEvents": [
+        {
+          "start": "HELLO",
+          "end": "HELLO",
+          "startTime": [
+            4,
+            0,
+            1000000000
+          ]
+        }
+      ],
+      "moveX": [
+        70.3125
+      ],
+      "scaleX": [
+        1.2321589543269231
+      ]
+    },
+    "pictureLine": {
+      "name": "Storyboard picture 1",
+      "texture": "tex.png",
+      "kind": "picture",
+      "layer": 2,
+      "textEvents": [],
+      "moveX": [
+        -140.625
+      ],
+      "scaleX": [
+        1.40625
+      ]
+    },
+    "stashedStoryboards": 1,
+    "importedOk": true,
+    "textOk": true,
+    "pictureOk": true,
+    "transformOk": true,
+    "leftoverStashed": true,
+    "columnsOk": true,
+    "exceptions": 0,
+    "ok": true
+  }
+}

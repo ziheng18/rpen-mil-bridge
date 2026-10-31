@@ -4,7 +4,7 @@
       "name": "mod",
       "data": {
         "loaded": "loaded",
-        "version": "0.7.7"
+        "version": "0.7.8"
       }
     },
     {
@@ -30,7 +30,7 @@
           "y": 51.824000000000005,
           "radius": 25.596,
           "barWidth": 7,
-          "barHeight": 16.432,
+          "barHeight": 19.276,
           "gap": 7
         },
         "scorePosition": {
@@ -76,7 +76,7 @@
           "y": 51.824000000000005,
           "radius": 25.596,
           "barWidth": 7,
-          "barHeight": 16.432,
+          "barHeight": 19.276,
           "gap": 7
         },
         "scorePosition": {
@@ -108,7 +108,7 @@
   ],
   "exceptions": [],
   "result": {
-    "version": "0.7.7",
+    "version": "0.7.8",
     "title": "Class Memories",
     "level": "Cloudburst 8",
     "score": "0208138",

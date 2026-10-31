@@ -1,0 +1,423 @@
+{
+  "fmt": 2,
+  "meta": {
+    "background_dim": 0.6,
+    "name": "Storyboard import test",
+    "background_artist": "",
+    "music_artist": "",
+    "charter": "",
+    "difficulty_name": "Cloudburst",
+    "difficulty": 8,
+    "offset": 0
+  },
+  "bpms": [
+    {
+      "time": [
+        0,
+        0,
+        1
+      ],
+      "bpm": 120
+    }
+  ],
+  "lines": [
+    {
+      "index": 0,
+      "notes": [
+        {
+          "index": 0,
+          "time": [
+            4,
+            0,
+            1
+          ],
+          "endTime": [
+            4,
+            0,
+            1
+          ],
+          "type": 0,
+          "isFake": false,
+          "isAlwaysPerfect": false
+        }
+      ],
+      "animations": [
+        {
+          "type": 0,
+          "startTime": [
+            0,
+            0,
+            1
+          ],
+          "endTime": [
+            16,
+            0,
+            1
+          ],
+          "start": 0,
+          "end": 0,
+          "bearer_type": 0,
+          "bearer": 0,
+          "ease": {
+            "type": 0,
+            "press": 0,
+            "isValueExp": false,
+            "cusValueExp": "",
+            "clipLeft": 0,
+            "clipRight": 1
+          }
+        },
+        {
+          "type": 5,
+          "startTime": [
+            0,
+            0,
+            1
+          ],
+          "endTime": [
+            16,
+            0,
+            1
+          ],
+          "start": 1,
+          "end": 1,
+          "bearer_type": 0,
+          "bearer": 0,
+          "ease": {
+            "type": 0,
+            "press": 0,
+            "isValueExp": false,
+            "cusValueExp": "",
+            "clipLeft": 0,
+            "clipRight": 1
+          }
+        }
+      ]
+    }
+  ],
+  "storyboards": [
+    {
+      "index": 0,
+      "type": 1,
+      "layer": 0,
+      "data": "HELLO",
+      "animations": [
+        {
+          "startTime": [
+            4,
+            0,
+            1
+          ],
+          "endTime": [
+            8,
+            0,
+            1
+          ],
+          "type": 0,
+          "start": 100,
+          "end": 100,
+          "bearer_type": 2,
+          "bearer": 0,
+          "ease": {
+            "type": 0,
+            "press": 0,
+            "isValueExp": false,
+            "cusValueExp": "",
+            "clipLeft": 0,
+            "clipRight": 1
+          }
+        },
+        {
+          "startTime": [
+            4,
+            0,
+            1
+          ],
+          "endTime": [
+            8,
+            0,
+            1
+          ],
+          "type": 1,
+          "start": 200,
+          "end": 200,
+          "bearer_type": 2,
+          "bearer": 0,
+          "ease": {
+            "type": 0,
+            "press": 0,
+            "isValueExp": false,
+            "cusValueExp": "",
+            "clipLeft": 0,
+            "clipRight": 1
+          }
+        },
+        {
+          "startTime": [
+            4,
+            0,
+            1
+          ],
+          "endTime": [
+            8,
+            0,
+            1
+          ],
+          "type": 4,
+          "start": 30,
+          "end": 30,
+          "bearer_type": 2,
+          "bearer": 0,
+          "ease": {
+            "type": 0,
+            "press": 0,
+            "isValueExp": false,
+            "cusValueExp": "",
+            "clipLeft": 0,
+            "clipRight": 1
+          }
+        },
+        {
+          "startTime": [
+            4,
+            0,
+            1
+          ],
+          "endTime": [
+            8,
+            0,
+            1
+          ],
+          "type": 10,
+          "start": 1.5,
+          "end": 1.5,
+          "bearer_type": 2,
+          "bearer": 0,
+          "ease": {
+            "type": 0,
+            "press": 0,
+            "isValueExp": false,
+            "cusValueExp": "",
+            "clipLeft": 0,
+            "clipRight": 1
+          }
+        },
+        {
+          "startTime": [
+            4,
+            0,
+            1
+          ],
+          "endTime": [
+            8,
+            0,
+            1
+          ],
+          "type": 11,
+          "start": 1.5,
+          "end": 1.5,
+          "bearer_type": 2,
+          "bearer": 0,
+          "ease": {
+            "type": 0,
+            "press": 0,
+            "isValueExp": false,
+            "cusValueExp": "",
+            "clipLeft": 0,
+            "clipRight": 1
+          }
+        },
+        {
+          "startTime": [
+            4,
+            0,
+            1
+          ],
+          "endTime": [
+            8,
+            0,
+            1
+          ],
+          "type": 2,
+          "start": 1,
+          "end": 1,
+          "bearer_type": 2,
+          "bearer": 0,
+          "ease": {
+            "type": 0,
+            "press": 0,
+            "isValueExp": false,
+            "cusValueExp": "",
+            "clipLeft": 0,
+            "clipRight": 1
+          }
+        },
+        {
+          "startTime": [
+            4,
+            0,
+            1
+          ],
+          "endTime": [
+            8,
+            0,
+            1
+          ],
+          "type": 22,
+          "start": 4294967295,
+          "end": 4294967295,
+          "bearer_type": 2,
+          "bearer": 0,
+          "ease": {
+            "type": 0,
+            "press": 0,
+            "isValueExp": false,
+            "cusValueExp": "",
+            "clipLeft": 0,
+            "clipRight": 1
+          }
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "type": 0,
+      "layer": 2,
+      "data": "res/tex.png",
+      "animations": [
+        {
+          "startTime": [
+            4,
+            0,
+            1
+          ],
+          "endTime": [
+            8,
+            0,
+            1
+          ],
+          "type": 0,
+          "start": -200,
+          "end": -200,
+          "bearer_type": 2,
+          "bearer": 1,
+          "ease": {
+            "type": 0,
+            "press": 0,
+            "isValueExp": false,
+            "cusValueExp": "",
+            "clipLeft": 0,
+            "clipRight": 1
+          }
+        },
+        {
+          "startTime": [
+            4,
+            0,
+            1
+          ],
+          "endTime": [
+            8,
+            0,
+            1
+          ],
+          "type": 1,
+          "start": 120,
+          "end": 120,
+          "bearer_type": 2,
+          "bearer": 1,
+          "ease": {
+            "type": 0,
+            "press": 0,
+            "isValueExp": false,
+            "cusValueExp": "",
+            "clipLeft": 0,
+            "clipRight": 1
+          }
+        },
+        {
+          "startTime": [
+            4,
+            0,
+            1
+          ],
+          "endTime": [
+            8,
+            0,
+            1
+          ],
+          "type": 4,
+          "start": 0,
+          "end": 0,
+          "bearer_type": 2,
+          "bearer": 1,
+          "ease": {
+            "type": 0,
+            "press": 0,
+            "isValueExp": false,
+            "cusValueExp": "",
+            "clipLeft": 0,
+            "clipRight": 1
+          }
+        },
+        {
+          "startTime": [
+            4,
+            0,
+            1
+          ],
+          "endTime": [
+            8,
+            0,
+            1
+          ],
+          "type": 10,
+          "start": 2,
+          "end": 2,
+          "bearer_type": 2,
+          "bearer": 1,
+          "ease": {
+            "type": 0,
+            "press": 0,
+            "isValueExp": false,
+            "cusValueExp": "",
+            "clipLeft": 0,
+            "clipRight": 1
+          }
+        },
+        {
+          "startTime": [
+            4,
+            0,
+            1
+          ],
+          "endTime": [
+            8,
+            0,
+            1
+          ],
+          "type": 11,
+          "start": 2,
+          "end": 2,
+          "bearer_type": 2,
+          "bearer": 1,
+          "ease": {
+            "type": 0,
+            "press": 0,
+            "isValueExp": false,
+            "cusValueExp": "",
+            "clipLeft": 0,
+            "clipRight": 1
+          }
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "type": 2,
+      "layer": 1,
+      "data": "mesh",
+      "animations": []
+    }
+  ]
+}
