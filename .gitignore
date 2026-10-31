@@ -34,3 +34,6 @@ rpen-milthm-bridge-test/out/
 /analyze/rpu-research/_shots/
 /rpen-milthm-bridge-test/export-flatten/baseline-chart.json
 /rpen-milthm-bridge-test/export-flatten/flattened-chart.json
+
+# 构建产物：仅本地生成，发布走 GitHub Releases
+*.rpenmod
