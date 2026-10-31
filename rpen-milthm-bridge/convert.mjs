@@ -229,8 +229,11 @@ export function importMilthmChart(source, settings = {}) {
         noteAnims.set(bearer, list);
       } else strayAnims.push(raw);
     }
-    const noteAnimCount = [...noteAnims.values()].reduce((sum, list) => sum + list.length, 0);
-    if (noteAnimCount) warnings.push(`轨道 ${sourceIndex}：${noteAnimCount} 条音符级动画（bearer_type=1）无法在 RPEN 预览/编辑，已暂存（导出时还原）`);
+    const noteAnimList = [...noteAnims.values()].flat();
+    const noteFlowCount = noteAnimList.filter(animation => Number(animation.type) === MIL_ANIM.FLOW_SPEED).length;
+    const noteOtherCount = noteAnimList.length - noteFlowCount;
+    if (noteFlowCount) warnings.push(`轨道 ${sourceIndex}：${noteFlowCount} 条音符级 FlowSpeed(5) 动画（预览会生效，RPEN 里不可编辑）已暂存（导出时还原）`);
+    if (noteOtherCount) warnings.push(`轨道 ${sourceIndex}：${noteOtherCount} 条音符级非 FlowSpeed 动画（如 Speed(12)/Size(3)）预览不支持，已暂存（导出时还原）`);
     if (strayAnims.length) warnings.push(`轨道 ${sourceIndex}：${strayAnims.length} 条非本线动画已原样暂存（导出时还原）`);
 
     const byType = new Map();

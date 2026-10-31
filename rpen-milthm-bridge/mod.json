@@ -6,14 +6,14 @@
     "zh-CN": "Milthm 自制谱桥接",
     "en-US": "Milthm fmt=2 Bridge"
   },
-  "version": "0.7.9",
+  "version": "0.7.10",
   "author": {
     "zh-CN": "可行性验证原型",
     "en-US": "Feasibility prototype"
   },
   "description": {
-    "zh-CN": "在 RPEN 中导入/编辑/导出 Milthm 自制谱（fmt=2），轨道式。v0.7.9：多线编辑的「编辑事件列」包含普通事件列下拉里的全部可编辑种类（X/Y/旋转/流速/轨道大小/整体·线体·线头·音符整体不透明度），勾选即作为左侧语义列并可编辑（提交时写回语义）；v0.7.8：导入故事板自动转文本线/判定线贴图。v0.7.5：导入谱不透明度对齐 Rain Editor。v0.7.1：全部文字换随包 ChillRoundF（OFL-1.1）。",
-    "en-US": "Import/edit/export Milthm fan charts (fmt=2) in RPEN. Track-based: each judge line = one Milthm track. v0.7.9: the multi-line edit column checkboxes cover every kind editable in the normal event-column dropdowns (X/Y/rotation/flow-speed/size and the four transparency variants); checked kinds become editable semantic columns in the left multi-line timeline and are written back to the semantics on commit. v0.7.8: imported storyboards become editable text lines / line textures. v0.7.5: imported-chart opacity follows Rain Editor. v0.7.1: all RPEN text uses the bundled ChillRoundF font (SIL OFL-1.1)."
+    "zh-CN": "在 RPEN 中导入/编辑/导出 Milthm 自制谱（fmt=2），轨道式。v0.7.10：导入警告更准确（音符级 FlowSpeed(5) 预览会生效但 RPEN 不可编辑；音符级 Speed(12)/Size(3) 等预览不支持）；v0.7.9：多线编辑事件列含全部普通层语义种类。v0.7.8：导入故事板转文本线/贴图线。v0.7.5：导入谱不透明度对齐 Rain Editor。v0.7.1：全部文字换随包 ChillRoundF（OFL-1.1）。",
+    "en-US": "Import/edit/export Milthm fan charts (fmt=2) in RPEN. Track-based: each judge line = one Milthm track. v0.7.10: more accurate import warnings (note-level FlowSpeed(5) takes effect in the preview but is not editable in RPEN; note-level Speed(12)/Size(3) etc. are not previewed). v0.7.9: multi-line event columns cover all normal-layer kinds. v0.7.8: imported storyboards become text lines / line textures. v0.7.5: imported-chart opacity follows Rain Editor. v0.7.1: all RPEN text uses the bundled ChillRoundF font (SIL OFL-1.1)."
   },
   "entry": "main.mjs",
   "settings": {

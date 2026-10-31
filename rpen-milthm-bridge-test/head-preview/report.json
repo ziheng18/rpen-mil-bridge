@@ -4,7 +4,7 @@
       "name": "mod",
       "data": {
         "loaded": "loaded",
-        "version": "0.7.9"
+        "version": "0.7.10"
       }
     },
     {
@@ -24,7 +24,7 @@
   ],
   "exceptions": [],
   "result": {
-    "version": "0.7.9",
+    "version": "0.7.10",
     "previewScale": 0.5111111111111111,
     "exceptions": 0,
     "ok": true
