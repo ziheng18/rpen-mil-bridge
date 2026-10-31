@@ -8,7 +8,7 @@ Milthm 是轨道式：`lines[]` 的每条就是一条轨道，同轨道音符没
 
 ## 安装
 
-1. RPEN 仓库根目录运行 `node tools/serve.mjs`（或 `npm start`）→ <http://127.0.0.1:4173>。
+1. 打开RPEN桌面版
 2. 右上角「模组」→「导入模组」→ 选择 `milthm-fmt2-bridge.rpenmod` → 勾选风险确认 → **启用**。
 3. 更新模组：再次导入同 ID 包会替换旧版本（需确认），然后重新启用并**刷新页面**。
 
@@ -93,6 +93,4 @@ copy "%TEMP%\milthm-fmt2-bridge.rpenmod" "<本目录>\"
 - `flatten.mjs` — 导出压平（多事件层相加合并、父子线烘焙）
 - `milthm-fmt2-bridge.rpenmod` — 打包产物
 - `fonts/ChillRoundF.ttf` + `fonts/OFL.txt` / `fonts/FONT-NOTICE.txt` — 随包字体与许可证
-
-完整版本历史见仓库根目录《RPEN-Milthm桥接-v0.4-事件列与导出集成.md》。
 
