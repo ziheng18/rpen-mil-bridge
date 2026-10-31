@@ -11,7 +11,7 @@ import {
   DEFAULT_COLUMNS, COLUMN_LABELS, COLUMN_LABELS_FULL, SLOT_CANDIDATES, semanticEvents, chartColumns,
   ensureChartColumns, syncMilthmColumns, remapColumns, buildMilthmExportChart, sceneSemanticArrays,
   milthmEventTypeLabels, SEMANTIC_COLUMNS, SEMANTIC_COLUMN_LABELS, semanticColumnKey, semanticColumnKind,
-  semanticColumnEvents,
+  semanticColumnEvents, composePreviewSpeedEvents,
 } from './columns.mjs';
 
 const MOD_ID = 'milthm-fmt2-bridge';
@@ -219,6 +219,8 @@ export async function activate(api) {
   // The bridge stores Speed / FlowSpeed as separate tracks; for the preview we bake the product of the
   // line tracks (Speed × 线FlowSpeed) into one speed track so RPEN's SpeedIntegral follows Milthm.
   // Note-level FlowSpeed is applied per note in the noteState patch. Export is untouched.
+  // v0.7.12: the composition samples each segment END one epsilon before the boundary; sampling the
+  // right value made the segment before any jump ramp towards the post-jump value (see columns.mjs).
   const speedScaleValue = () => {
     const value = Number(settings()['speed-scale']);
     return Number.isFinite(value) && value > 0 ? value : 1.1671875;
@@ -247,36 +249,22 @@ export async function activate(api) {
       start: Number(event.start) / scale, end: Number(event.end) / scale,
       easingType: 1, easingLeft: 0, easingRight: 1, bezier: 0, bezierPoints: [0, 0, 1, 1], linkgroup: 0 }));
   };
-  const composePreviewSpeedEvents = (speedEvents, flowEvents, tempo) => {
-    const speedTrack = previewTrack(speedEvents, tempo, 1);
-    const flowTrack = previewTrack(flowEvents, tempo, 1);
-    const cuts = new Set();
-    for (const event of [...speedEvents, ...flowEvents]) { cuts.add(beatNumberOf(event.startTime)); cuts.add(beatNumberOf(event.endTime)); }
-    const beats = [...cuts].sort((left, right) => left - right);
-    const composed = [];
-    const pushSegment = (startBeat, endBeat) => {
-      if (!(endBeat > startBeat)) return;
-      const startTime = fromNumber(startBeat), endTime = fromNumber(endBeat);
-      const startSeconds = tempo.seconds(startTime), endSeconds = tempo.seconds(endTime);
-      composed.push({
-        startTime, endTime,
-        start: speedTrack.value(startSeconds) * flowTrack.value(startSeconds),
-        end: speedTrack.value(endSeconds) * flowTrack.value(endSeconds),
-        easingType: 1, easingLeft: 0, easingRight: 1, bezier: 0, bezierPoints: [0, 0, 1, 1], linkgroup: 0,
-      });
-    };
-    for (let index = 0; index < beats.length - 1; index++) {
-      const start = beats[index], end = beats[index + 1];
-      const middle = (start + end) / 2;
-      pushSegment(start, middle);
-      pushSegment(middle, end);
-    }
-    return composed.length ? composed : speedEvents;
-  };
+  // Bake Speed(12) × line FlowSpeed(5) into one RPE speed track. The pure composition lives in
+  // columns.mjs (offline unit test `speed-compose-test.mjs`); this wires RPEN's EventTrack in so
+  // the first event's easing/easingLeft/Right are honoured when sampling.
+  const composeSpeedTracks = (speedEvents, flowEvents, tempo) => composePreviewSpeedEvents(speedEvents, flowEvents, {
+    beatOf: beatNumberOf,
+    toTime: fromNumber,
+    secondsOf: time => tempo.seconds(time),
+    sampler: events => {
+      const track = previewTrack(events, tempo, 1);
+      return seconds => track.value(seconds);
+    },
+  });
   const previewSpeedEvents = (line, semantics, tempo) => {
     const base = speedEventsRpe(line, semantics);
     const flowEvents = flowMultiplierEvents(line, semantics);
-    if (base && flowEvents?.length) return composePreviewSpeedEvents(base, flowEvents, tempo);
+    if (base && flowEvents?.length) return composeSpeedTracks(base, flowEvents, tempo);
     if (base) return base;
     return semantics.flowSpeed ?? [];
   };

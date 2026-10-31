@@ -601,6 +601,87 @@ export function buildMilthmExportChart(chart) {
   return next;
 }
 
+/* ---------------- preview speed composition: Speed(12) × FlowSpeed(5) ---------------- */
+/**
+ * Compose two Milthm line tracks into one RPE speed track whose value is their product.
+ *
+ * RPEN integrates a *speed track* into note distances (`SpeedIntegral`), so a Milthm line whose
+ * falling distance is `Speed(12) × FlowSpeed(5)` needs both tracks baked into a single speed
+ * track for the preview. The product of two piecewise-linear tracks is piecewise-quadratic while
+ * RPEN only integrates linear events, so every cut interval is split in two halves and each half
+ * is interpolated between three samples (start / middle / end).
+ *
+ * Sampling rule (v0.7.12 fix): a segment must END with the value *before* the boundary.
+ * RPEN's `EventTrack.value()` is right-continuous — it picks the last event whose start <= t — so
+ * sampling a boundary where a new event starts returns the post-jump value. The previous
+ * implementation did exactly that, which turned the entire segment before a jump into a ramp
+ * towards the new value instead of keeping it flat until the jump. 《エゴイスト》Track 4 has
+ * `Speed(12)` 1 → 1 for the whole song plus one 1/4-beat `80` at beat 635.5 while `FlowSpeed(5)`
+ * is a constant 8; right-sampling the 635.5 boundary made the composed track climb linearly from
+ * 9.34 at beat 318 to 747 at beat 635.5, so notes in the second half of that track fell up to
+ * ~80× too fast in the preview (the "still has high-speed notes" report) even though the source
+ * chart and the renderer keep that line at one constant speed. A left-limit sample keeps each
+ * segment flat until the boundary and reproduces the renderer's step.
+ *
+ * @param speedEvents Speed(12) track, already converted to RPE speed units.
+ * @param flowEvents  FlowSpeed(5) track holding the raw (dimensionless) multiplier.
+ * @param {object} options
+ * @param {(time:any) => number} options.beatOf        time triple -> beat number
+ * @param {(beat:number) => any} options.toTime        beat number -> time triple
+ * @param {(time:any) => number} options.secondsOf     time triple -> seconds
+ * @param {(events:any[]) => ((seconds:number) => number)} options.sampler  build a track sampler
+ * @param {number} [options.epsilon]                   seconds subtracted for the left limit
+ * @returns {any[]} composed RPE speed events (may be empty)
+ */
+export function composePreviewSpeedEvents(speedEvents, flowEvents, options = {}) {
+  const all = [...(speedEvents ?? []), ...(flowEvents ?? [])];
+  if (!all.length) return [];
+  const beatOf = options.beatOf ?? (time => Array.isArray(time)
+    ? Number(time[0]) + Number(time[1]) / (Number(time[2]) || 1) : Number(time));
+  const toTime = options.toTime ?? (beat => [0, beat, 1]);
+  const secondsOf = options.secondsOf ?? (time => beatOf(time));
+  const sampler = options.sampler;
+  if (typeof sampler !== 'function') throw new TypeError('composePreviewSpeedEvents needs options.sampler');
+  const epsilon = Number.isFinite(options.epsilon) ? Number(options.epsilon) : 1e-6;
+  const sampleSpeed = sampler(speedEvents ?? []);
+  const sampleFlow = sampler(flowEvents ?? []);
+  const product = seconds => Number(sampleSpeed(seconds)) * Number(sampleFlow(seconds));
+  // Left limit: step one epsilon back so an event starting exactly on the boundary is excluded.
+  const productBefore = seconds => product(Math.max(0, seconds - epsilon));
+  const cuts = new Set();
+  for (const event of all) { cuts.add(beatOf(event.startTime)); cuts.add(beatOf(event.endTime)); }
+  const beats = [...cuts].filter(value => Number.isFinite(value)).sort((left, right) => left - right);
+  const composed = [];
+  const pushSegment = (startBeat, endBeat) => {
+    if (!(endBeat > startBeat)) return;
+    const startTime = toTime(startBeat);
+    const endTime = toTime(endBeat);
+    composed.push({
+      startTime, endTime,
+      start: product(secondsOf(startTime)),
+      end: productBefore(secondsOf(endTime)),
+      easingType: 1, easingLeft: 0, easingRight: 1, bezier: 0, bezierPoints: [0, 0, 1, 1], linkgroup: 0,
+    });
+  };
+  for (let index = 0; index < beats.length - 1; index++) {
+    const start = beats[index], end = beats[index + 1];
+    const middle = (start + end) / 2;
+    pushSegment(start, middle);
+    pushSegment(middle, end);
+  }
+  // SpeedIntegral extrapolates backwards from its first event with that event's start value, so a
+  // track whose first cut is not at 0 behaves identically without an anchor; anchor anyway when
+  // the composed track would start after the chart origin (keeps floor(0) = 0 for every caller).
+  if (composed.length && beats[0] > 0) {
+    composed.unshift({
+      startTime: toTime(0), endTime: toTime(beats[0]),
+      start: composed[0].start, end: composed[0].start,
+      easingType: 1, easingLeft: 0, easingRight: 1, bezier: 0, bezierPoints: [0, 0, 1, 1], linkgroup: 0,
+    });
+  }
+  return composed;
+}
+
 /** Native arrays to inject while compiling the preview scene (so scene semantics stay correct). */
 export function sceneSemanticArrays(line) {
   const semantics = semanticEvents(line);
