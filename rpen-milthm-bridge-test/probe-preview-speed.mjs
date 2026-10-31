@@ -53,6 +53,10 @@ const crafted = {
     { index: 1, notes: [note(0)], animations: [longEvent(12, 2, 0, 1), longEvent(5, 3, 0, 1), longEvent(5, 2, 1, 0)] },
     { index: 2, notes: [note(0)], animations: [longEvent(5, 3, 0, 2)] },
     { index: 3, notes: [note(0)], animations: [longEvent(12, 2, 0, 3)] },
+    // line 4: only line Size(3)=2 -> note distance doubles (RPU noteFlowSpeed *= lineSize)
+    { index: 4, notes: [note(0)], animations: [longEvent(3, 2, 0, 4)] },
+    // line 5: no animations at all -> default Speed/FlowSpeed/Size = 1
+    { index: 5, notes: [note(0)], animations: [] },
   ],
   storyboards: [],
 };
@@ -99,25 +103,45 @@ try {
   const doc = await send('DOM.getDocument', { depth: -1, pierce: true });
   const input = await send('DOM.querySelector', { nodeId: doc.root.nodeId, selector: '#file-input' });
   await send('DOM.setFileInputFiles', { nodeId: input.nodeId, files: [CHART_ZIP] });
-  await waitFor(`(() => { const chart = window.rpenMods.editor?.chart; return chart?.['x-milthm']?.columns && chart.judgeLineList?.length === 4 ? true : null; })()`, 90000, 'import');
+  await waitFor(`(() => { const chart = window.rpenMods.editor?.chart; return chart?.['x-milthm']?.columns && chart.judgeLineList?.length === 6 ? true : null; })()`, 90000, 'import');
   await evaluate(`window.rpenMods.editor.setPreview(true)`);
-  await waitFor(`(() => { const preview = window.rpenMods.editor.preview; return preview?.visible && preview.canvas.getBoundingClientRect().width > 100 && preview.scene?.lines?.length === 4; })()`, 30000, 'preview');
+  await waitFor(`(() => { const preview = window.rpenMods.editor.preview; return preview?.visible && preview.canvas.getBoundingClientRect().width > 100 && preview.scene?.lines?.length === 6; })()`, 30000, 'preview');
   await evaluate(`window.rpenMods.editor.seek(1)`);
   await sleep(900);
-  const data = await evaluate(`(() => {
+  const readPreview = () => evaluate(`(() => {
     const preview = window.rpenMods.editor.preview;
     const readLine = index => {
       const runtime = preview.scene.lines[index];
       const state = runtime.state(1);
       const entry = runtime.notes[0];
       const noteState = entry ? runtime.noteState(entry, state, 1) : null;
-      return { floor1: runtime.floor(1), noteFloor: entry?.floor ?? null, noteY: noteState?.y ?? null };
+      return { floor1: runtime.floor(1), noteFloor: entry?.floor ?? null, noteY: noteState?.y ?? null, size: state.scaleX ?? null };
     };
-    return [0, 1, 2, 3].map(readLine);
+    return [0, 1, 2, 3, 4, 5].map(readLine);
   })()`);
+  const data = await readPreview();
   step('preview', data);
-  const expectedFloor = [2 * 3 * SPEED_SCALE * 120, 2 * 3 * SPEED_SCALE * 120, 3 * SPEED_SCALE * 120, 2 * SPEED_SCALE * 120];
+  const expectedFloor = [2 * 3 * SPEED_SCALE * 120, 2 * 3 * SPEED_SCALE * 120, 3 * SPEED_SCALE * 120, 2 * SPEED_SCALE * 120, SPEED_SCALE * 120, SPEED_SCALE * 120];
   const near = (value, expected) => Number.isFinite(value) && Math.abs(value - expected) <= Math.max(1e-6, Math.abs(expected) * 1e-9);
+
+  // global FLOW_SPEED (renderer setting): same number = same falling speed; the bridge baked
+  // 1.66 into speed-scale, so setting 2.0 must scale floor/note distance by 2.0/1.66.
+  step('global-flow-speed', await evaluate(`(async () => {
+    const manager = window.rpenMods.manager;
+    const state = manager.runtime.loaded.get('milthm-fmt2-bridge');
+    await state.api.settings.set('renderer-flow-speed', 2);
+    await new Promise(resolve => setTimeout(resolve, 1200));
+    return { value: state.api.settings.get('renderer-flow-speed') };
+  })()`));
+  const globalData = await readPreview();
+  step('preview-global-2', globalData);
+  await evaluate(`(async () => {
+    const manager = window.rpenMods.manager;
+    const state = manager.runtime.loaded.get('milthm-fmt2-bridge');
+    await state.api.settings.set('renderer-flow-speed', 1.66);
+    await new Promise(resolve => setTimeout(resolve, 900));
+    return true;
+  })()`);
   const ratio = (a, b) => (Number.isFinite(a) && Number.isFinite(b) && b !== 0 ? a / b : null);
   const result = {
     version: report.steps.find(entry => entry.name === 'mod')?.data?.version,
@@ -128,10 +152,16 @@ try {
     noteFlowRatio: ratio(data[1].noteY, data[0].noteY),
     speedRatio: ratio(data[0].noteY, data[2].noteY),
     lineFlowRatio: ratio(data[0].noteY, data[3].noteY),
+    lineSizeRatio: ratio(data[4].noteY, data[5].noteY),
+    basicLineSize: data[4].size,
+    globalFlowFloorRatio: ratio(globalData[5].floor1, data[5].floor1),
+    globalFlowNoteRatio: ratio(globalData[5].noteY, data[5].noteY),
     exceptions: exceptions.length,
   };
   result.ok = Boolean(result.version) && result.floorsMatchComposition
     && near(result.noteFlowRatio, 2) && near(result.speedRatio, 2) && near(result.lineFlowRatio, 3)
+    && near(result.lineSizeRatio, 2)
+    && near(result.globalFlowFloorRatio, 2 / 1.66) && near(result.globalFlowNoteRatio, 2 / 1.66)
     && result.exceptions === 0;
   const screenshot = await send('Page.captureScreenshot', { format: 'png' });
   fs.writeFileSync(path.join(OUT, 'preview-speed.png'), Buffer.from(screenshot.data, 'base64'));
