@@ -1,0 +1,90 @@
+{
+  "steps": [
+    {
+      "name": "default-prompt",
+      "data": {
+        "length": 9675,
+        "hit": "Milthm 轨道式谱面",
+        "laneLock": true,
+        "xMilthm": true,
+        "exportHint": true
+      }
+    },
+    {
+      "name": "migration-table",
+      "data": {
+        "oldEntries": [
+          {
+            "locale": "zh-CN",
+            "length": 8313,
+            "hash": 3950552029
+          },
+          {
+            "locale": "en-US",
+            "length": 23805,
+            "hash": 1734259979
+          }
+        ],
+        "registered": [
+          {
+            "locale": "zh-CN",
+            "length": 8313,
+            "hash": 3950552029,
+            "lengthListed": true,
+            "pairListed": true,
+            "customLengthListed": false
+          },
+          {
+            "locale": "en-US",
+            "length": 23805,
+            "hash": 1734259979,
+            "lengthListed": true,
+            "pairListed": true,
+            "customLengthListed": false
+          }
+        ],
+        "currentLength": 9675
+      }
+    },
+    {
+      "name": "ui-prompt",
+      "data": {
+        "panelButtons": 11,
+        "configureFound": true,
+        "dialogOpen": true,
+        "hasPrompt": true,
+        "promptLength": 9626
+      }
+    }
+  ],
+  "exceptions": [],
+  "result": {
+    "promptLength": 9675,
+    "marker": "Milthm 轨道式谱面",
+    "hasLaneLock": true,
+    "hasXMilthm": true,
+    "hasExportHint": true,
+    "oldDefaultsRegistered": true,
+    "registered": [
+      {
+        "locale": "zh-CN",
+        "length": 8313,
+        "hash": 3950552029,
+        "lengthListed": true,
+        "pairListed": true
+      },
+      {
+        "locale": "en-US",
+        "length": 23805,
+        "hash": 1734259979,
+        "lengthListed": true,
+        "pairListed": true
+      }
+    ],
+    "customPromptUnaffected": true,
+    "freshProfileUsesNewDefault": true,
+    "uiShowsPrompt": true,
+    "exceptions": 0,
+    "ok": true
+  }
+}
