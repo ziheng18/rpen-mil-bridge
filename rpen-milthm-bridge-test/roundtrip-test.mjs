@@ -117,10 +117,12 @@ for (const [label, settings] of variants) {
   mutated.judgeLineList[1].bpmfactor = 2;
   mutated.judgeLineList[1].father = 0;
   const normalized = normalizeLaneChart(mutated, settings);
+  // v0.7.13: `father` is no longer reset — the hierarchy stays editable/previewable and export
+  // bakes it into absolute keyframes (flatten.mjs, covered by flatten-test.mjs).
   const ok = normalized.judgeLineList[1].notes[0].positionX === 0
     && normalized.judgeLineList[1].notes[0].size === 1
     && normalized.judgeLineList[1].bpmfactor === 1
-    && normalized.judgeLineList[1].father === -1;
+    && normalized.judgeLineList[1].father === 0;
   console.log('\n[lane lock] normalized:', ok);
   if (!ok) failed++;
 }

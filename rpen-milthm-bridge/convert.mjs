@@ -623,7 +623,7 @@ export function exportMilthmChart(chart, settings = {}) {
   for (const [lineIndex, line] of judgeLineList.entries()) {
     const stash = line?.['x-milthm'] ?? {};
     const layers = Array.isArray(line?.eventLayers) && line.eventLayers.length ? line.eventLayers : [{}];
-    if (layers.length > 1) warnings.push(`线 ${lineIndex} 有 ${layers.length} 个事件层：Milthm 单轨道无法表达叠加，已平铺导出（语义可能不同）`);
+    if (layers.length > 1) warnings.push(`线 ${lineIndex} 有 ${layers.length} 个事件层且未合并：Milthm 单轨道无法表达叠加，已逐层平铺导出（正常导出路径会先按数值相加合并，见 flatten.mjs）`);
     const extended = line?.extended ?? {};
     // RPEN special-event lines: text lines draw `extended.textEvents`, custom `line.Texture`
     // lines draw an image — neither exists on a Milthm judge line, so export them as storyboards.
@@ -716,7 +716,7 @@ export function exportMilthmChart(chart, settings = {}) {
     for (const { raw, bearer } of noteAnimations) {
       animations.push(rawToMil(raw, MIL_BEARER.NOTE, bearer));
     }
-    if (Number(line?.father ?? -1) !== -1) warnings.push('RPEN 父子线（father）在 Milthm 中不存在，已忽略');
+    if (Number(line?.father ?? -1) !== -1) warnings.push('RPEN 父子线（father）未烘焙：Milthm 没有线层级，已按该线自身事件导出（正常导出路径会先烘焙，见 flatten.mjs）');
     if (Number(line?.bpmfactor ?? 1) !== 1) warnings.push('RPEN 线的 bpmfactor 在 Milthm 中不存在，已忽略');
 
     animations.sort((a, b) => beatOf(a.startTime) - beatOf(b.startTime));
@@ -906,7 +906,8 @@ export function normalizeLaneChart(chart, settings = {}) {
     let lineChanged = false;
     const linePatch = {};
     if (Number(line.bpmfactor ?? 1) !== 1) { linePatch.bpmfactor = 1; lineChanged = true; }
-    if (Number(line.father ?? -1) !== -1) { linePatch.father = -1; lineChanged = true; }
+    // `father` is deliberately NOT reset: RPEN keeps the hierarchy for preview/editing and
+    // export bakes it into absolute keyframes (flatten.mjs), with a warning when it happens.
     // Track lines keep the default line texture; note-less lines may keep a custom texture,
     // which the preview draws natively and the export converts into a picture storyboard.
     if (line.Texture && line.Texture !== 'line.png' && (line.notes ?? []).length > 0) { linePatch.Texture = 'line.png'; lineChanged = true; }

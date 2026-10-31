@@ -1,0 +1,92 @@
+{
+  "steps": [
+    {
+      "name": "mod",
+      "data": {
+        "loaded": "loaded",
+        "version": "0.7.13"
+      }
+    },
+    {
+      "name": "baseline export",
+      "data": {
+        "name": "エゴイスト",
+        "warnings": []
+      }
+    },
+    {
+      "name": "baseline file",
+      "data": {
+        "file": "エゴイスト.json",
+        "lines": 16
+      }
+    },
+    {
+      "name": "modify",
+      "data": {
+        "lines": 17,
+        "line4Layers": 2
+      }
+    },
+    {
+      "name": "wait columns",
+      "data": {
+        "lines": 17,
+        "layers": 2,
+        "stash": true
+      }
+    },
+    {
+      "name": "father",
+      "data": {
+        "father": 4,
+        "hasStash": true
+      }
+    },
+    {
+      "name": "flattened export",
+      "data": {
+        "name": "エゴイスト",
+        "warnings": [
+          "事件层已按数值叠加合并导出：1 条线 / 1 个事件轨（RPEN 预览本来就把各层相加，Milthm 只有单轨；合并后不能再逐层编辑）",
+          "父子线已烘焙导出：1 条线（16）的父线位移/旋转已合成为绝对关键帧；Milthm 没有线层级，导出后不再有父子关系"
+        ]
+      }
+    },
+    {
+      "name": "flattened file",
+      "data": {
+        "file": "エゴイスト (2).json",
+        "lines": 17
+      }
+    }
+  ],
+  "exceptions": [],
+  "result": {
+    "version": "0.7.13",
+    "warnings": [
+      "事件层已按数值叠加合并导出：1 条线 / 1 个事件轨（RPEN 预览本来就把各层相加，Milthm 只有单轨；合并后不能再逐层编辑）",
+      "父子线已烘焙导出：1 条线（16）的父线位移/旋转已合成为绝对关键帧；Milthm 没有线层级，导出后不再有父子关系"
+    ],
+    "warningLayerMerge": true,
+    "warningFatherBake": true,
+    "layerShiftSamples": 148,
+    "layerShift": 1422.2222222222222,
+    "layerShiftExpected": 1422.2222222222222,
+    "layerMergeOk": true,
+    "childSamples": {
+      "x": 2717,
+      "y": 141,
+      "rotate": 82
+    },
+    "childMaxDiff": {
+      "x": 0,
+      "y": 0,
+      "rotate": 0
+    },
+    "fatherBakeOk": true,
+    "exportedLines": 17,
+    "exceptions": 0,
+    "ok": true
+  }
+}

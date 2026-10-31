@@ -13,6 +13,7 @@ import {
   milthmEventTypeLabels, SEMANTIC_COLUMNS, SEMANTIC_COLUMN_LABELS, semanticColumnKey, semanticColumnKind,
   semanticColumnEvents, composePreviewSpeedEvents,
 } from './columns.mjs';
+import { flattenChartForMilthm } from './flatten.mjs';
 
 const MOD_ID = 'milthm-fmt2-bridge';
 const DIM_TYPE = 'background-dim';
@@ -803,9 +804,35 @@ export async function activate(api) {
     if (!chart || !Array.isArray(chart.judgeLineList)) throw new Error('当前没有可导出的谱面');
     return chart;
   };
+  // RPEN-only structure has no Milthm counterpart, but both cases are numerically definable, so
+  // flatten them instead of dropping them (see flatten.mjs):
+  //  - extra event layers: RPEN preview adds the layers, so one merged track is exact;
+  //  - parent lines: bake the composed transform into absolute X/Y/rotation keyframes.
+  const flattenForMilthm = view => flattenChartForMilthm(view, {
+    beatOf: beatNumberOf,
+    toTime: beat => fromNumber(beat),
+    secondsOf: time => editor.tempo.seconds(time),
+    sampler: (events, fallback = 0) => {
+      const track = new EventTrack((events ?? []).map(event => ({
+        startTime: event.startTime, endTime: event.endTime,
+        start: Number(event.start), end: Number(event.end),
+        easingType: Number(event.easingType ?? 1),
+        easingLeft: Number(event.easingLeft ?? 0), easingRight: Number(event.easingRight ?? 1),
+        bezier: Number(event.bezier ?? 0), bezierPoints: event.bezierPoints ?? [0, 0, 1, 1],
+        trajectory: event.trajectory,
+      })), editor.tempo, 1, fallback);
+      return seconds => track.value(seconds);
+    },
+  });
+  const milthmExportView = chart => {
+    const { chart: view, warnings: flattenWarnings } = flattenForMilthm(buildMilthmExportChart(chart));
+    const { chart: milthm, warnings } = exportMilthmChart(view, settings());
+    warnings.unshift(...flattenWarnings);
+    return { milthm, warnings };
+  };
   const exportJson = async () => {
     const chart = currentMilthmChart();
-    const { chart: milthm, warnings } = exportMilthmChart(buildMilthmExportChart(chart), settings());
+    const { milthm, warnings } = milthmExportView(chart);
     const dimStoryboard = attachDimStoryboard(chart, milthm);
     if (dimStoryboard) warnings.push('背景明暗已导出为纯黑立绘 storyboard（chart.json 不含 res/black.png，需要谱面包 zip 或自行提供该图片）');
     await downloadBlob(new Blob([JSON.stringify(milthm, null, 4)], { type: 'application/json' }), `${sanitizeFileName(milthm.meta.name)}.json`);
@@ -815,7 +842,7 @@ export async function activate(api) {
   };
   const exportZip = async () => {
     const chart = currentMilthmChart();
-    const { chart: milthm, warnings } = exportMilthmChart(buildMilthmExportChart(chart), settings());
+    const { milthm, warnings } = milthmExportView(chart);
     const entries = new Map();
     const encoder = new TextEncoder();
     const dimStoryboard = attachDimStoryboard(chart, milthm);
