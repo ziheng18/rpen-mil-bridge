@@ -130,7 +130,7 @@ try {
   }
   step('responsiveness', { moved, attempts: attempts.length, details: attempts });
 
-  // 3) opacity initialisation on a brand-new Milthm chart: Track 0 = 255, added lines = 0.
+  // 3) opacity initialisation on a brand-new Milthm chart (v0.7.3): Track 0 AND added lines = 255.
   step('new chart line 0', await evaluate(`(async () => {
     const command = window.rpenMods.manager.runtime.commands.get('milthm-fmt2-bridge:new-milthm-chart');
     await command.run();
@@ -158,6 +158,7 @@ try {
     && JSON.stringify(events[0].endTime) === JSON.stringify([0, 1, 1]);
   const isOpaqueInit = events => oneBeatAtZero(events) && Number(events[0].start) === 1;
   const isTransparentInit = events => oneBeatAtZero(events) && Number(events[0].start) === 0;
+  void isTransparentInit;
   const addedAlpha = data('after add').addedLineAlpha ?? {};
   const line0Alpha = data('new chart line 0').line0 ?? {};
   const line1Alpha = data('new chart line 1').line1 ?? {};
@@ -166,14 +167,14 @@ try {
     addedLines: data('after add').lines,
     commitCountAfterAdd: data('after add').commitCount2s,
     addedLineHasStash: data('after add').addedLineHasStash && data('after add').addedLineHasEvents,
-    addedLineZeroInit: isTransparentInit(addedAlpha.lineAlpha) && isTransparentInit(addedAlpha.bodyAlpha) && isTransparentInit(addedAlpha.headAlpha),
+    addedLineOpaqueInit: isOpaqueInit(addedAlpha.lineAlpha) && isOpaqueInit(addedAlpha.bodyAlpha) && isOpaqueInit(addedAlpha.headAlpha),
     newChartTrack0OpaqueInit: isOpaqueInit(line0Alpha.lineAlpha) && isOpaqueInit(line0Alpha.bodyAlpha) && isOpaqueInit(line0Alpha.headAlpha),
-    newChartAddedLineZeroInit: isTransparentInit(line1Alpha.lineAlpha) && isTransparentInit(line1Alpha.bodyAlpha) && isTransparentInit(line1Alpha.headAlpha),
+    newChartAddedLineOpaqueInit: isOpaqueInit(line1Alpha.lineAlpha) && isOpaqueInit(line1Alpha.bodyAlpha) && isOpaqueInit(line1Alpha.headAlpha),
     panelMoves: data('responsiveness').moved,
     exceptions: exceptions.length,
   };
   result.ok = result.addedLines === 20 && result.commitCountAfterAdd <= 3 && result.addedLineHasStash
-    && result.addedLineZeroInit && result.newChartTrack0OpaqueInit && result.newChartAddedLineZeroInit
+    && result.addedLineOpaqueInit && result.newChartTrack0OpaqueInit && result.newChartAddedLineOpaqueInit
     && result.panelMoves === 6 && result.exceptions === 0;
   report.result = result;
   fs.writeFileSync(path.join(OUT, 'report.json'), JSON.stringify(report, null, 2));

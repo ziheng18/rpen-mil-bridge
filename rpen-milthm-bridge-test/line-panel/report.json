@@ -4,7 +4,7 @@
       "name": "mod",
       "data": {
         "loaded": "loaded",
-        "version": "0.7.2"
+        "version": "0.7.3"
       }
     },
     {
@@ -39,8 +39,8 @@
                 1,
                 1
               ],
-              "start": 0,
-              "end": 0
+              "start": 1,
+              "end": 1
             }
           ],
           "bodyAlpha": [
@@ -55,8 +55,8 @@
                 1,
                 1
               ],
-              "start": 0,
-              "end": 0
+              "start": 1,
+              "end": 1
             }
           ],
           "headAlpha": [
@@ -71,8 +71,8 @@
                 1,
                 1
               ],
-              "start": 0,
-              "end": 0
+              "start": 1,
+              "end": 1
             }
           ],
           "x": 1,
@@ -210,8 +210,8 @@
                 1,
                 1
               ],
-              "start": 0,
-              "end": 0
+              "start": 1,
+              "end": 1
             }
           ],
           "bodyAlpha": [
@@ -226,8 +226,8 @@
                 1,
                 1
               ],
-              "start": 0,
-              "end": 0
+              "start": 1,
+              "end": 1
             }
           ],
           "headAlpha": [
@@ -242,8 +242,8 @@
                 1,
                 1
               ],
-              "start": 0,
-              "end": 0
+              "start": 1,
+              "end": 1
             }
           ],
           "x": 1,
@@ -254,13 +254,13 @@
   ],
   "exceptions": [],
   "result": {
-    "version": "0.7.2",
+    "version": "0.7.3",
     "addedLines": 20,
     "commitCountAfterAdd": 1,
     "addedLineHasStash": true,
-    "addedLineZeroInit": true,
+    "addedLineOpaqueInit": true,
     "newChartTrack0OpaqueInit": true,
-    "newChartAddedLineZeroInit": true,
+    "newChartAddedLineOpaqueInit": true,
     "panelMoves": 6,
     "exceptions": 0,
     "ok": true

@@ -4,8 +4,7 @@
       "name": "mod",
       "data": {
         "loaded": "loaded",
-        "version": "0.7.2",
-        "files": 8
+        "version": "0.7.3"
       }
     },
     {
@@ -130,12 +129,113 @@
           }
         ]
       }
+    },
+    {
+      "name": "header-single-line",
+      "data": {
+        "labels": [
+          "X 坐标",
+          "Y 坐标",
+          "旋转",
+          "轨道整体不透明度",
+          "流速倍率"
+        ],
+        "expected": [
+          "X 坐标",
+          "Y 坐标",
+          "旋转",
+          "轨道整体不透明度",
+          "流速倍率"
+        ]
+      }
+    },
+    {
+      "name": "enter-multiline",
+      "data": {
+        "active": true,
+        "mode": "events",
+        "lines": [
+          0,
+          1,
+          2
+        ]
+      }
+    },
+    {
+      "name": "header-multi-line",
+      "data": {
+        "labels": [
+          "X 坐标",
+          "Y 坐标",
+          "旋转",
+          "轨道整体不透明度",
+          "流速倍率"
+        ],
+        "expected": [
+          "X 坐标",
+          "Y 坐标",
+          "旋转",
+          "轨道整体不透明度",
+          "流速倍率"
+        ],
+        "panels": {
+          "count": 3,
+          "width": 946
+        }
+      }
+    },
+    {
+      "name": "edit-columns-list",
+      "data": [
+        {
+          "value": "moveXEvents",
+          "label": "X 坐标",
+          "checked": false
+        },
+        {
+          "value": "moveYEvents",
+          "label": "Y 坐标",
+          "checked": false
+        },
+        {
+          "value": "rotateEvents",
+          "label": "旋转",
+          "checked": false
+        },
+        {
+          "value": "alphaEvents",
+          "label": "轨道整体不透明度（线头+线身，Transparency 2）",
+          "checked": false
+        },
+        {
+          "value": "speedEvents",
+          "label": "流速倍率",
+          "checked": false
+        }
+      ]
+    },
+    {
+      "name": "check-columns",
+      "data": {
+        "expected": {
+          "0": 15,
+          "1": 13,
+          "2": 12
+        },
+        "actual": {
+          "0": 15,
+          "1": 13,
+          "2": 12
+        },
+        "filterValue": "all",
+        "currentLineSelection": 15
+      }
     }
   ],
   "exceptions": [],
   "console": [],
   "result": {
-    "version": "0.7.2",
+    "version": "0.7.3",
     "defaultLabels": [
       "全部",
       "X 坐标",
@@ -148,24 +248,50 @@
       "轨道颜色（Color 22）",
       "轨道文字（文本事件）"
     ],
-    "defaultKeys": [
-      "all",
-      "moveXEvents",
-      "moveYEvents",
-      "rotateEvents",
-      "alphaEvents",
-      "speedEvents",
-      "scaleXEvents",
-      "scaleYEvents",
-      "colorEvents",
-      "textEvents"
-    ],
     "defaultMatches": true,
     "paintHiddenInitially": true,
-    "remappedAlphaLabel": "轨道整体不透明度（线头+线身，Transparency 2）",
     "remappedLabelOk": true,
     "paintHiddenAfterRemap": true,
+    "singleHeaderLabels": [
+      "X 坐标",
+      "Y 坐标",
+      "旋转",
+      "轨道整体不透明度",
+      "流速倍率"
+    ],
+    "singleHeaderOk": true,
+    "multiHeaderLabels": [
+      "X 坐标",
+      "Y 坐标",
+      "旋转",
+      "轨道整体不透明度",
+      "流速倍率"
+    ],
+    "multiHeaderOk": true,
+    "checkboxLabels": [
+      "X 坐标",
+      "Y 坐标",
+      "旋转",
+      "轨道整体不透明度（线头+线身，Transparency 2）",
+      "流速倍率"
+    ],
+    "checkboxLabelsOk": true,
+    "checkboxSelection": {
+      "expected": {
+        "0": 15,
+        "1": 13,
+        "2": 12
+      },
+      "actual": {
+        "0": 15,
+        "1": 13,
+        "2": 12
+      },
+      "filterValue": "all",
+      "currentLineSelection": 15
+    },
     "exceptions": 0,
+    "checkboxSelectionOk": true,
     "ok": true
   }
 }

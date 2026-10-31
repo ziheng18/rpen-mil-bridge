@@ -4,7 +4,7 @@
       "name": "mod",
       "data": {
         "loaded": "loaded",
-        "version": "0.7.2"
+        "version": "0.7.3"
       }
     },
     {
@@ -18,7 +18,7 @@
           "flowSpeed"
         ],
         "alpha": {
-          "total": 145,
+          "total": 135,
           "zero": 52,
           "hooked": 52,
           "zeroHooked": 52
@@ -78,7 +78,7 @@
   ],
   "exceptions": [],
   "result": {
-    "version": "0.7.2",
+    "version": "0.7.3",
     "zeroDurationOpacityHooked": true,
     "controlZeroDurationHooked": true,
     "hookOnPersisted": true,

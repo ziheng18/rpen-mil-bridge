@@ -9,7 +9,7 @@ import {
 } from '../rpen-milthm-bridge/convert.mjs';
 import {
   ensureChartColumns, syncMilthmColumns, remapColumns, buildMilthmExportChart,
-  milthmEventTypeLabels, semanticEvents, chartColumns,
+  milthmEventTypeLabels, semanticEvents, chartColumns, deriveSemantics,
 } from '../rpen-milthm-bridge/columns.mjs';
 
 const rpeEvent = (startBeat, endBeat, start, end) => ({
@@ -98,6 +98,24 @@ const sizeValues = line => semanticEvents(line).size.map(event => [Number(event.
   assert.deepEqual(sizeValues(adopted.judgeLineList[0]), [[0.5, 0.5]]);
   assert.deepEqual(adopted.judgeLineList[0].extended.scaleXEvents.map(event => event.start), [0.5]);
   console.log('[size column] ok');
+}
+
+// ---- 4) v0.7.3: missing alpha tracks initialise to fully opaque 255 (1) ----
+{
+  const alphaEvent = value => ({ startTime: [0, 0, 1], endTime: [0, 1, 1], start: value, end: value,
+    easingType: 1, easingLeft: 0, easingRight: 1, bezier: 0, bezierPoints: [0, 0, 1, 1], linkgroup: 0 });
+  // a line with only the primary alpha column present: body/head are missing and must be filled opaquely
+  const line = {
+    eventLayers: [{ moveXEvents: [alphaEvent(0)], moveYEvents: [alphaEvent(0)], rotateEvents: [alphaEvent(0)], alphaEvents: [alphaEvent(0.5)], speedEvents: [alphaEvent(10)] }],
+    extended: {}, notes: [],
+  };
+  const semantics = deriveSemantics(line);
+  const opaque = events => events.length === 1 && Number(events[0].start) === 1 && Number(events[0].end) === 1
+    && JSON.stringify(events[0].startTime) === JSON.stringify([0, 0, 1]) && JSON.stringify(events[0].endTime) === JSON.stringify([0, 1, 1]);
+  assert.equal(semantics.lineAlpha.length, 1, 'existing lineAlpha must be kept');
+  assert.ok(opaque(semantics.bodyAlpha), 'missing bodyAlpha must initialise to 255 (1)');
+  assert.ok(opaque(semantics.headAlpha), 'missing headAlpha must initialise to 255 (1)');
+  console.log('[alpha init] ok');
 }
 
 console.log('=== MULTI-EDIT TESTS PASSED ===');

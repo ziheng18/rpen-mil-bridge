@@ -4,7 +4,7 @@
       "name": "mod",
       "data": {
         "loaded": "loaded",
-        "version": "0.7.2"
+        "version": "0.7.3"
       }
     },
     {
@@ -52,7 +52,7 @@
     "specials test.zip"
   ],
   "result": {
-    "version": "0.7.2",
+    "version": "0.7.3",
     "zipName": "specials test.zip",
     "entries": [
       "chart.json",

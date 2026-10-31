@@ -169,15 +169,14 @@ function mergeRawLists(primary, extra) {
 
 /* ---------------- derive semantic events from a native chart line ---------------- */
 
-function makeSyntheticAlphaInit(type, startTime = [0, 0, 1], endTime = [0, 1, 1], value = 0) {
+function makeSyntheticAlphaInit(type, startTime = [0, 0, 1], endTime = [0, 1, 1], value = 1) {
   const ease = { type: 0, press: 0, isValueExp: false, cusValueExp: '', clipLeft: 0, clipRight: 1 };
   return { type, startTime: clone(startTime), endTime: clone(endTime), start: value, end: value, ease, syntheticInit: true };
 }
 
-const plusBeat = time => [Number(time?.[0] ?? 0) + 1, Number(time?.[1] ?? 0), Number(time?.[2] ?? 1)];
-
-// Missing line-transparency tracks are initialised with a single 1-beat fully transparent (0)
-// event, starting at beat 0:
+// Missing line-transparency tracks are initialised with a single 1-beat fully opaque (255)
+// event starting at beat 0. v0.7.3 changed this from 0 (transparent) to 255 per user request,
+// so every line and every initialised alpha channel starts fully opaque:
 //  - lineAlpha missing, body/head present  -> initialise lineAlpha;
 //  - lineAlpha present, body AND head both missing -> initialise body and head;
 //  - body/head are peers: never auto-fill one from the other.
@@ -195,18 +194,9 @@ function addTransparencyInitializers(semantics) {
     targets.push({ key: 'headAlpha', type: MIL_ANIM.LINE_HEAD_TRANSPARENCY });
   }
   if (!targets.length) return;
-  // Start beat of the existing transparency events (used for the 255 hand-off event).
-  let earliestTime = null;
-  let earliestBeat = null;
-  for (const key of ['lineAlpha', 'bodyAlpha', 'headAlpha']) for (const event of (semantics[key] ?? [])) {
-    const beat = eventBeat(event.startTime);
-    if (earliestBeat === null || beat < earliestBeat) { earliestBeat = beat; earliestTime = event.startTime; }
-  }
   for (const target of targets) {
     if ((semantics[target.key] ?? []).length) continue;
-    const events = [makeSyntheticAlphaInit(target.type, [0, 0, 1], [0, 1, 1], 0)];
-    if (earliestTime) events.push(makeSyntheticAlphaInit(target.type, earliestTime, plusBeat(earliestTime), 1));
-    semantics[target.key] = events;
+    semantics[target.key] = [makeSyntheticAlphaInit(target.type, [0, 0, 1], [0, 1, 1], 1)];
   }
 }
 
@@ -332,16 +322,15 @@ export function chartColumns(chart) {
  * "新增判定线" / "批量增加" on a Milthm chart). Such a line becomes a regular track:
  * X/Y/rotation/flow-speed/size come from its native events.
  *
- * Opacity initialisation (v0.6.5): all three Milthm line-alpha channels (整体
+ * Opacity initialisation (v0.7.3): all three Milthm line-alpha channels (整体
  * Transparency 2 / 线身 LineBody 8 / 线头 LineHead 9) get one 1-beat event starting at
- * beat 0. The default line (index 0, "Track 0") is initialised to 255 (opaque, same as a
- * brand-new chart); lines added later (index >= 1) are initialised to 0 (transparent) so
- * they start hidden until animated in.
+ * beat 0, initialised to 255 (fully opaque) for every line — including lines added later
+ * (index >= 1), which used to start transparent (0) until v0.7.2.
  */
 function stashForPlainLine(line, index) {
   const layer = line?.eventLayers?.[0] ?? {};
   const extended = line?.extended ?? {};
-  const alphaValue = index === 0 ? 1 : 0;
+  const alphaValue = 1;
   const alphaInit = type => ({
     type, startTime: [0, 0, 1], endTime: [0, 1, 1], start: alphaValue, end: alphaValue,
     ease: { type: 0, press: 0, isValueExp: false, cusValueExp: '', clipLeft: 0, clipRight: 1 },

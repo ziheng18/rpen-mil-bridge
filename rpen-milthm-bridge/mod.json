@@ -6,14 +6,14 @@
     "zh-CN": "Milthm 自制谱桥接",
     "en-US": "Milthm fmt=2 Bridge"
   },
-  "version": "0.7.2",
+  "version": "0.7.3",
   "author": {
     "zh-CN": "可行性验证原型",
     "en-US": "Feasibility prototype"
   },
   "description": {
-    "zh-CN": "在 RPEN 中导入/编辑/导出 Milthm 自制谱（fmt=2），轨道式。v0.7.2：适配「多线编辑」的事件类型下拉——Milthm 谱面下按当前事件列映射显示语义通道名（线体/线头/整体不透明度、流速倍率、轨道大小、颜色、文字），隐藏无语义的着色器列；缩放列的多线编辑会并入唯一 Size(3) 通道。v0.7.1：模组启用后把 RPEN 全部文字换成随包 ChillRoundF（OFL-1.1，许可证随包）。v0.7.0：RPEN 特殊事件（线文本/判定线贴图）导出时转 Milthm 故事板。v0.6.9：修复预览旋转方向。v0.6.8：预览落速按 Milthm 完整公式组合。v0.6.7：预览判定头放大到音符大小。v0.6.6：全局流速（预览）设置。",
-    "en-US": "Import/edit/export Milthm fan charts (fmt=2) in RPEN. Track-based: each judge line = one Milthm track. v0.7.2 adapts RPEN's multi-line edit event-type dropdown for Milthm charts: labels follow the current event-column mapping (per-channel transparency, flow speed, size, colour, text), the shader type is hidden, and scale-column edits are merged into the single Milthm Size(3) channel. v0.7.1 replaces all RPEN text with the bundled ChillRoundF font (SIL OFL-1.1, license shipped). v0.7.0 converts RPEN special events (line text / line textures) into Milthm storyboards on export."
+    "zh-CN": "在 RPEN 中导入/编辑/导出 Milthm 自制谱（fmt=2），轨道式。v0.7.3：不透明度初始化统一为 255（全不透明）；时间轴顶部表头按 Milthm 事件列显示语义名（多线编辑时也是）；多线编辑面板新增「编辑事件列」勾选，控制左侧参与编辑的事件。v0.7.2：适配多线编辑的事件类型下拉。v0.7.1：RPEN 全部文字换成随包 ChillRoundF（OFL-1.1）。v0.7.0：特殊事件（线文本/判定线贴图）导出时转 Milthm 故事板。",
+    "en-US": "Import/edit/export Milthm fan charts (fmt=2) in RPEN. Track-based: each judge line = one Milthm track. v0.7.3: all initialised opacities are fully opaque 255; the timeline header shows the semantic column names (also while multi-line editing); the multi-line edit panel gains an \"edit event columns\" checkbox group controlling which events on the left are edited. v0.7.2: multi-line edit event-type dropdown follows the column mapping. v0.7.1: all RPEN text uses the bundled ChillRoundF font (SIL OFL-1.1). v0.7.0: converts RPEN special events (line text / line textures) into Milthm storyboards on export."
   },
   "entry": "main.mjs",
   "settings": {

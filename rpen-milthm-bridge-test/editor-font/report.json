@@ -15,7 +15,7 @@
       "name": "mod",
       "data": {
         "loaded": "loaded",
-        "version": "0.7.2",
+        "version": "0.7.3",
         "files": [
           "columns.mjs",
           "convert.mjs",
@@ -102,7 +102,7 @@
   ],
   "exceptions": [],
   "result": {
-    "version": "0.7.2",
+    "version": "0.7.3",
     "fontInPackage": true,
     "licenseInPackage": true,
     "defaultSetting": true,

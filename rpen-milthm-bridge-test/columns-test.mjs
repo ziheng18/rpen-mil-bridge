@@ -158,10 +158,11 @@ function semanticDiff(exported, label) {
     const added = initialised.judgeLineList[19];
     if (!added['x-milthm']?.events) failures.push('ensure: added line has no x-milthm stash/events');
     if (added['x-milthm']?.events?.x?.length !== 1) failures.push('ensure: added line X semantics missing');
-    // v0.6.5: added lines (index >= 1) initialise 整体(2)/线身(8)/线头(9) to 0 (transparent), 1 beat from beat 0.
-    alphaInitOk(added['x-milthm']?.events?.lineAlpha, 0, 'added line lineAlpha');
-    alphaInitOk(added['x-milthm']?.events?.bodyAlpha, 0, 'added line bodyAlpha');
-    alphaInitOk(added['x-milthm']?.events?.headAlpha, 0, 'added line headAlpha');
+    // v0.7.3: every line (including added lines, index >= 1) initialises 整体(2)/线身(8)/线头(9)
+    // to 255 (fully opaque), 1 beat from beat 0.
+    alphaInitOk(added['x-milthm']?.events?.lineAlpha, 1, 'added line lineAlpha');
+    alphaInitOk(added['x-milthm']?.events?.bodyAlpha, 1, 'added line bodyAlpha');
+    alphaInitOk(added['x-milthm']?.events?.headAlpha, 1, 'added line headAlpha');
     if (ensureChartColumns(initialised)) failures.push('ensure: not idempotent (second pass still reports changes) => commit loop risk');
     const committed = normalizeLaneChart(syncMilthmColumns(initialised), {});
     if (ensureChartColumns(committed)) failures.push('ensure: still needs init after the commit pipeline => commit loop risk');
@@ -172,11 +173,11 @@ function semanticDiff(exported, label) {
       if (!count) failures.push('export: added line exported without animations');
       const alphaTypes = (exported.lines[19].animations ?? []).filter(animation => [2, 8, 9].includes(Number(animation.type)));
       if (alphaTypes.length !== 3) failures.push('export: added line should export 3 opacity animations (2/8/9), got ' + alphaTypes.length);
-      for (const animation of alphaTypes) if (Number(animation.start) !== 0 || Number(animation.end) !== 0) failures.push(`export: added line type ${animation.type} init not 0`);
+      for (const animation of alphaTypes) if (Number(animation.start) !== 1 || Number(animation.end) !== 1) failures.push(`export: added line type ${animation.type} init not 255 (1)`);
       console.log('plain line init -> stash ok, second pass null, exported animations:', count);
     }
   }
-  // A plain line at index 0 (the chart default track) initialises to 255 instead of 0.
+  // A plain line at index 0 (the chart default track) also initialises to 255 (v0.7.3: no more 0).
   {
     const defaultChart = { META: { RPEVersion: 240 }, BPMList: [{ bpm: 120, startTime: [0, 0, 1] }],
       'x-milthm': { kind: 'milthm-fmt2', columns: ['x', 'y', 'rotate', 'bodyAlpha', 'flowSpeed'] }, judgeLineList: [structuredClone(plainLine)] };
