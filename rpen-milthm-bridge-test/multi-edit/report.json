@@ -4,7 +4,7 @@
       "name": "mod",
       "data": {
         "loaded": "loaded",
-        "version": "0.7.12"
+        "version": "0.7.14"
       }
     },
     {
@@ -330,7 +330,7 @@
   "exceptions": [],
   "console": [],
   "result": {
-    "version": "0.7.12",
+    "version": "0.7.14",
     "singleLineOptions": [
       "全部",
       "X 坐标",

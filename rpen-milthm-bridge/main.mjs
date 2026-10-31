@@ -1222,8 +1222,23 @@ export async function activate(api) {
   const columnShown = [];
   let columnOverlay = null;
   let columnPoll = null;
+  // RPEN hides its own column labels while the playback preview is open (`#multi-line-labels`),
+  // and the preview canvas covers the event columns, so the Milthm dropdowns must hide too —
+  // otherwise they float above the preview HUD. Watch the preview wrapper so the bar disappears
+  // on the same click that opens the preview, not on the next (350 ms) poll.
+  const previewOverlayVisible = () => Boolean(editor?.preview?.visible);
+  let previewToggleObserver = null;
+  const watchPreviewToggle = () => {
+    if (previewToggleObserver || typeof MutationObserver !== 'function') return;
+    const wrap = document.querySelector('.preview-wrap');
+    if (!wrap) return;
+    previewToggleObserver = new MutationObserver(() => updateColumnOverlay());
+    previewToggleObserver.observe(wrap, { attributes: true, attributeFilter: ['hidden'] });
+  };
   const updateColumnOverlay = () => {
     if (!columnOverlay) return;
+    watchPreviewToggle();
+    if (previewOverlayVisible()) { columnOverlay.style.display = 'none'; return; }
     const chart = editor.chart;
     const timeline = editor.timeline;
     const canvas = timeline?.eventsCanvas;
@@ -1281,6 +1296,8 @@ export async function activate(api) {
   api.dispose(() => {
     window.removeEventListener('resize', resizeColumnOverlay);
     if (columnPoll) clearInterval(columnPoll);
+    previewToggleObserver?.disconnect();
+    previewToggleObserver = null;
     columnOverlay?.remove();
   });
 
@@ -1822,6 +1839,8 @@ export async function activate(api) {
   return {
     dispose() {
       panel.remove();
+      previewToggleObserver?.disconnect();
+      previewToggleObserver = null;
       columnOverlay?.remove();
       document.querySelector('#milthm-timeline-select')?.parentElement?.remove();
     },
