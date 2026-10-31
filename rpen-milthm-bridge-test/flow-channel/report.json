@@ -1,0 +1,98 @@
+{
+  "steps": [
+    {
+      "name": "mod",
+      "data": {
+        "loaded": "loaded",
+        "version": "0.7.11"
+      }
+    },
+    {
+      "name": "before",
+      "data": {
+        "floor60": 67230,
+        "scaleX": 2,
+        "primarySpeedType": 12,
+        "lineFlowRaw": [
+          {
+            "start": 8,
+            "end": 8,
+            "startTime": [
+              0,
+              0,
+              4
+            ],
+            "endTime": [
+              1,
+              0,
+              4
+            ]
+          }
+        ],
+        "speedEvents": [],
+        "noteCount": 42,
+        "firstNoteBeat": 36,
+        "lastNoteBeat": 635
+      }
+    },
+    {
+      "name": "edit-flow-channel",
+      "data": {
+        "lineFlowRaw": [
+          4
+        ]
+      }
+    },
+    {
+      "name": "after",
+      "data": {
+        "floor60": 33615,
+        "scaleX": 2,
+        "primarySpeedType": 12,
+        "lineFlowRaw": [
+          {
+            "start": 4,
+            "end": 4,
+            "startTime": [
+              0,
+              0,
+              1
+            ],
+            "endTime": [
+              16,
+              0,
+              1
+            ]
+          }
+        ],
+        "speedEvents": [],
+        "noteCount": 42,
+        "firstNoteBeat": 36,
+        "lastNoteBeat": 635
+      }
+    }
+  ],
+  "exceptions": [],
+  "result": {
+    "version": "0.7.11",
+    "primarySpeedType": 12,
+    "lineFlowRawBefore": [
+      8
+    ],
+    "lineFlowRawAfter": [
+      4
+    ],
+    "speedEvents": [],
+    "notes": 42,
+    "lastNoteBeat": 635,
+    "floor60Before": 67230,
+    "floor60After": 33615,
+    "floorRatio": 0.5,
+    "speedPrimaryOk": true,
+    "lineFlowWas8": true,
+    "lineFlowNow4": true,
+    "previewResponds": true,
+    "exceptions": 0,
+    "ok": true
+  }
+}

@@ -878,6 +878,46 @@ export async function activate(api) {
     const chart = currentMilthmChart();
     const lineIndex = currentLineIndex();
     const line = chart.judgeLineList[lineIndex];
+    // 流速倍率: Speed(12)-primary lines keep FlowSpeed(5) raw values in the Milthm channel store;
+    // FlowSpeed(5)-primary lines keep them in the semantic list (RPE-scaled), so edit both the
+    // semantic list and the native speed carrier when that column shows flowSpeed.
+    if (type === 'line-flow-speed') {
+      const stash = line?.['x-milthm'] ?? {};
+      const speedPrimary = Number(stash.primarySpeedType) === MIL_ANIM.SPEED;
+      const scale = speedScaleValue();
+      const semantics = semanticEvents(line);
+      const events = speedPrimary
+        ? (stash.channels?.flowSpeed ?? [])
+        : (semantics.flowSpeed ?? []).map(event => ({ ...event, start: Number(event.start) / scale, end: Number(event.end) / scale }));
+      return {
+        kind: 'milthm', format: 'milthm', valueKind: 'number', events,
+        hint: speedPrimary
+          ? 'Milthm FlowSpeed(5)：与 Speed(12) 相乘的线级流速倍率（原始值，默认 1）'
+          : 'Milthm FlowSpeed(5)：线级视觉流速倍率（显示为原始倍率，内部按 RPE 速度折算）',
+        set: nextEvents => {
+          const next = structuredClone(chart);
+          const target = next.judgeLineList[lineIndex];
+          if (!target) return;
+          if (speedPrimary) {
+            target['x-milthm'] = target['x-milthm'] ?? {};
+            target['x-milthm'].channels = target['x-milthm'].channels ?? { bodyAlpha: [], headAlpha: [], wholeAlpha: [], flowSpeed: [] };
+            target['x-milthm'].channels.flowSpeed = structuredClone(nextEvents);
+          } else {
+            const scaled = nextEvents.map(event => ({ ...event, start: Number(event.start) * scale, end: Number(event.end) * scale }));
+            target['x-milthm'] = target['x-milthm'] ?? {};
+            target['x-milthm'].events = target['x-milthm'].events ?? {};
+            target['x-milthm'].events.flowSpeed = structuredClone(scaled);
+            const columns = chart['x-milthm']?.columns ?? [];
+            if (columns[4] === 'flowSpeed') {
+              target.eventLayers = target.eventLayers ?? [{}];
+              target.eventLayers[0] = target.eventLayers[0] ?? {};
+              target.eventLayers[0].speedEvents = structuredClone(scaled);
+            }
+          }
+          editor.commit('编辑 Milthm 流速倍率', next);
+        },
+      };
+    }
     if (CHANNEL_KEYS[type]) {
       const key = CHANNEL_KEYS[type];
       const events = line?.['x-milthm']?.channels?.[key] ?? [];

@@ -45,11 +45,14 @@ export const isSemanticColumnKind = kind => SEMANTIC_COLUMNS.includes(kind);
 // semantics -> editable display events (alpha channels use RPEN's integer 0..255 carrier)
 export function semanticColumnEvents(semantics, kind) {
   if (ALPHA_KEYS.has(kind)) return (semantics?.[kind] ?? []).map(raw => rawToCarrierEvent(raw));
+  // Speed(12)-primary lines keep their FlowSpeed(5) multiplier in flowRaw (raw Milthm values)
+  if (kind === 'flowSpeed' && (semantics?.speed ?? []).length) return cloneEvents(semantics?.flowRaw ?? []);
   return cloneEvents(semantics?.[kind] ?? []);
 }
 // edited display events -> semantics (keeps the Milthm snapshots for untouched events)
-export function semanticColumnRawEvents(events, kind) {
+export function semanticColumnRawEvents(events, kind, semantics = null) {
   if (ALPHA_KEYS.has(kind)) return (events ?? []).map(event => carrierEventToRaw(event, MIL_ANIM_TYPES[kind]));
+  if (kind === 'flowSpeed' && semantics && (semantics.speed ?? []).length) return cloneEvents(events ?? []);
   return cloneEvents(events ?? []);
 }
 
@@ -445,7 +448,8 @@ export function syncMilthmColumns(chart) {
       for (const [key, value] of Object.entries(line.extended ?? {})) {
         const kind = semanticColumnKind(key);
         if (!isSemanticColumnKind(kind) || !Array.isArray(value)) continue;
-        semantics[kind] = semanticColumnRawEvents(value, kind);
+        if (kind === 'flowSpeed' && (semantics.speed ?? []).length) semantics.flowRaw = cloneEvents(value);
+        else semantics[kind] = semanticColumnRawEvents(value, kind, semantics);
         (strippedExtended ??= { ...line.extended });
         delete strippedExtended[key];
       }
@@ -455,6 +459,34 @@ export function syncMilthmColumns(chart) {
         const keys = Object.keys(layer).filter(key => isSemanticColumnKind(semanticColumnKind(key)));
         for (const key of keys) delete layer[key];
       }
+    }
+    // Milthm-only channels edited from the mod panel (线体/线头/整体不透明度 and the line
+    // FlowSpeed(5) of Speed(12)-primary lines) are authoritative when their stored list changed;
+    // afterwards the semantic lists are mirrored back so the panel/export always see live data.
+    // `stash.channelsApplied` remembers the last mirror so untouched channels never override
+    // semantic edits (e.g. from the multi-line semantic columns).
+    {
+      const applied = stash.channelsApplied ?? {};
+      const channels = { ...(stash.channels ?? {}) };
+      for (const key of ['bodyAlpha', 'headAlpha', 'wholeAlpha']) {
+        const list = Array.isArray(channels[key]) ? channels[key] : [];
+        const current = signature(list);
+        if (applied[key] !== undefined && current !== applied[key]) semantics[key] = cloneEvents(list);
+        channels[key] = cloneEvents(semantics[key] ?? []);
+        applied[key] = signature(channels[key]);
+      }
+      if ((semantics.speed ?? []).length) {
+        const list = Array.isArray(channels.flowSpeed) ? channels.flowSpeed : [];
+        const current = signature(list);
+        if (applied.flowSpeed !== undefined && current !== applied.flowSpeed) semantics.flowRaw = cloneEvents(list);
+        channels.flowSpeed = cloneEvents(semantics.flowRaw ?? []);
+        applied.flowSpeed = signature(channels.flowSpeed);
+      } else {
+        channels.flowSpeed = [];
+        applied.flowSpeed = signature(channels.flowSpeed);
+      }
+      stash.channels = channels;
+      stash.channelsApplied = applied;
     }
     // Milthm has a single Size(3) track, mirrored into RPEN's extended scaleX/scaleY columns.
     // RPEN's multi-line edit (and the extended event view) can edit those native arrays directly,
@@ -564,6 +596,7 @@ export function buildMilthmExportChart(chart) {
     stash.events = semantics;
     delete stash.applied;
     delete stash.appliedSize;
+    delete stash.channelsApplied;
   }
   return next;
 }
