@@ -4,7 +4,7 @@
       "name": "mod",
       "data": {
         "loaded": "loaded",
-        "version": "0.7.8"
+        "version": "0.7.9"
       }
     },
     {
@@ -21,7 +21,7 @@
       }
     },
     {
-      "name": "dropdown-default-columns",
+      "name": "dropdown-single-line",
       "data": {
         "value": "all",
         "title": "Milthm 事件类型：标签对应当前事件列映射",
@@ -133,18 +133,67 @@
       "name": "header-multi-line-default",
       "data": {
         "eventTypes": [
-          "moveXEvents",
-          "moveYEvents",
-          "rotateEvents",
-          "alphaEvents",
-          "speedEvents"
+          "milthmCol_x",
+          "milthmCol_y",
+          "milthmCol_rotate",
+          "milthmCol_flowSpeed",
+          "milthmCol_lineAlpha"
         ],
         "header": [
           "X 坐标",
           "Y 坐标",
           "旋转",
-          "轨道整体不透明度",
-          "流速倍率"
+          "流速倍率",
+          "轨道整体不透明度"
+        ]
+      }
+    },
+    {
+      "name": "dropdown-multi-line",
+      "data": {
+        "value": "all",
+        "title": "Milthm 事件类型：标签对应当前事件列映射",
+        "options": [
+          {
+            "value": "all",
+            "label": "全部"
+          },
+          {
+            "value": "milthmCol_x",
+            "label": "X 坐标"
+          },
+          {
+            "value": "milthmCol_y",
+            "label": "Y 坐标"
+          },
+          {
+            "value": "milthmCol_rotate",
+            "label": "旋转"
+          },
+          {
+            "value": "milthmCol_flowSpeed",
+            "label": "流速倍率"
+          },
+          {
+            "value": "milthmCol_size",
+            "label": "轨道大小"
+          },
+          {
+            "value": "milthmCol_lineAlpha",
+            "label": "轨道整体不透明度"
+          },
+          {
+            "value": "milthmCol_bodyAlpha",
+            "label": "线体不透明度"
+          },
+          {
+            "value": "milthmCol_headAlpha",
+            "label": "线头不透明度"
+          },
+          {
+            "value": "milthmCol_wholeAlpha",
+            "label": "音符整体不透明度"
+          }
         ]
       }
     },
@@ -152,29 +201,49 @@
       "name": "edit-columns-list",
       "data": [
         {
-          "value": "moveXEvents",
+          "value": "milthmCol_x",
           "label": "X 坐标",
           "checked": true
         },
         {
-          "value": "moveYEvents",
+          "value": "milthmCol_y",
           "label": "Y 坐标",
           "checked": true
         },
         {
-          "value": "rotateEvents",
+          "value": "milthmCol_rotate",
           "label": "旋转",
           "checked": true
         },
         {
-          "value": "alphaEvents",
+          "value": "milthmCol_flowSpeed",
+          "label": "流速倍率",
+          "checked": true
+        },
+        {
+          "value": "milthmCol_size",
+          "label": "轨道大小",
+          "checked": false
+        },
+        {
+          "value": "milthmCol_lineAlpha",
           "label": "轨道整体不透明度",
           "checked": true
         },
         {
-          "value": "speedEvents",
-          "label": "流速倍率",
-          "checked": true
+          "value": "milthmCol_bodyAlpha",
+          "label": "线体不透明度",
+          "checked": false
+        },
+        {
+          "value": "milthmCol_headAlpha",
+          "label": "线头不透明度",
+          "checked": false
+        },
+        {
+          "value": "milthmCol_wholeAlpha",
+          "label": "音符整体不透明度",
+          "checked": false
         }
       ]
     },
@@ -182,10 +251,11 @@
       "name": "check-columns",
       "data": {
         "checked": [
-          "moveXEvents",
-          "rotateEvents",
-          "alphaEvents",
-          "speedEvents"
+          "milthmCol_x",
+          "milthmCol_rotate",
+          "milthmCol_flowSpeed",
+          "milthmCol_size",
+          "milthmCol_lineAlpha"
         ]
       }
     },
@@ -193,16 +263,18 @@
       "name": "timeline-selected-columns",
       "data": {
         "eventTypes": [
-          "moveXEvents",
-          "rotateEvents",
-          "alphaEvents",
-          "speedEvents"
+          "milthmCol_x",
+          "milthmCol_rotate",
+          "milthmCol_flowSpeed",
+          "milthmCol_size",
+          "milthmCol_lineAlpha"
         ],
         "header": [
           "X 坐标",
           "旋转",
-          "轨道整体不透明度",
-          "流速倍率"
+          "流速倍率",
+          "轨道大小",
+          "轨道整体不透明度"
         ]
       }
     },
@@ -215,9 +287,24 @@
     {
       "name": "select-visible",
       "data": {
-        "line0": 15,
-        "line1": 14,
-        "line2": 13
+        "line0": 17,
+        "line1": 41,
+        "line2": 40,
+        "injected": {
+          "x": 14,
+          "rotate": 1,
+          "flowSpeed": 1,
+          "size": 0,
+          "lineAlpha": 1
+        }
+      }
+    },
+    {
+      "name": "edit-pseudo-commit",
+      "data": {
+        "xStart": 123,
+        "pseudoInExtended": [],
+        "pseudoInLayer": []
       }
     },
     {
@@ -231,10 +318,11 @@
           "textEvents"
         ],
         "restoredTypes": [
-          "moveXEvents",
-          "rotateEvents",
-          "alphaEvents",
-          "speedEvents"
+          "milthmCol_x",
+          "milthmCol_rotate",
+          "milthmCol_flowSpeed",
+          "milthmCol_size",
+          "milthmCol_lineAlpha"
         ]
       }
     }
@@ -242,8 +330,8 @@
   "exceptions": [],
   "console": [],
   "result": {
-    "version": "0.7.8",
-    "defaultLabels": [
+    "version": "0.7.9",
+    "singleLineOptions": [
       "全部",
       "X 坐标",
       "Y 坐标",
@@ -251,65 +339,91 @@
       "线体不透明度（LineBodyTransparency 8）",
       "流速倍率"
     ],
-    "defaultMatches": true,
-    "defaultKeys": [
-      "all",
-      "moveXEvents",
-      "moveYEvents",
-      "rotateEvents",
-      "alphaEvents",
-      "speedEvents"
-    ],
-    "onlyNormalLayerKinds": true,
+    "singleLineOk": true,
     "paintHiddenInitially": true,
     "remappedLabelOk": true,
-    "paintHiddenAfterRemap": true,
+    "multiLineOptions": [
+      "all",
+      "milthmCol_x",
+      "milthmCol_y",
+      "milthmCol_rotate",
+      "milthmCol_flowSpeed",
+      "milthmCol_size",
+      "milthmCol_lineAlpha",
+      "milthmCol_bodyAlpha",
+      "milthmCol_headAlpha",
+      "milthmCol_wholeAlpha"
+    ],
+    "multiLineLabels": [
+      "全部",
+      "X 坐标",
+      "Y 坐标",
+      "旋转",
+      "流速倍率",
+      "轨道大小",
+      "轨道整体不透明度",
+      "线体不透明度",
+      "线头不透明度",
+      "音符整体不透明度"
+    ],
+    "multiLineOk": true,
     "singleHeaderOk": true,
-    "checkoutDefaults": [
-      {
-        "value": "moveXEvents",
-        "label": "X 坐标",
-        "checked": true
-      },
-      {
-        "value": "moveYEvents",
-        "label": "Y 坐标",
-        "checked": true
-      },
-      {
-        "value": "rotateEvents",
-        "label": "旋转",
-        "checked": true
-      },
-      {
-        "value": "alphaEvents",
-        "label": "轨道整体不透明度",
-        "checked": true
-      },
-      {
-        "value": "speedEvents",
-        "label": "流速倍率",
-        "checked": true
-      }
+    "checkboxLabels": [
+      "X 坐标",
+      "Y 坐标",
+      "旋转",
+      "流速倍率",
+      "轨道大小",
+      "轨道整体不透明度",
+      "线体不透明度",
+      "线头不透明度",
+      "音符整体不透明度"
     ],
     "checkboxLabelsOk": true,
+    "defaultChecked": [
+      "milthmCol_x",
+      "milthmCol_y",
+      "milthmCol_rotate",
+      "milthmCol_flowSpeed",
+      "milthmCol_lineAlpha"
+    ],
+    "defaultCheckedOk": true,
     "defaultColumnsOk": true,
     "defaultHeaderOk": true,
     "selectedColumns": [
-      "moveXEvents",
-      "rotateEvents",
-      "alphaEvents",
-      "speedEvents"
+      "milthmCol_x",
+      "milthmCol_rotate",
+      "milthmCol_flowSpeed",
+      "milthmCol_size",
+      "milthmCol_lineAlpha"
     ],
     "selectedHeader": [
       "X 坐标",
       "旋转",
-      "轨道整体不透明度",
-      "流速倍率"
+      "流速倍率",
+      "轨道大小",
+      "轨道整体不透明度"
     ],
     "selectedColumnsOk": true,
     "selectedHeaderOk": true,
     "hiddenLocked": true,
+    "pseudoCommit": {
+      "xStart": 123,
+      "pseudoInExtended": [],
+      "pseudoInLayer": []
+    },
+    "visibleSelection": {
+      "line0": 17,
+      "line1": 41,
+      "line2": 40,
+      "injected": {
+        "x": 14,
+        "rotate": 1,
+        "flowSpeed": 1,
+        "size": 0,
+        "lineAlpha": 1
+      }
+    },
     "specialLayer": {
       "extendedTypes": [
         "scaleXEvents",
@@ -319,19 +433,16 @@
         "textEvents"
       ],
       "restoredTypes": [
-        "moveXEvents",
-        "rotateEvents",
-        "alphaEvents",
-        "speedEvents"
+        "milthmCol_x",
+        "milthmCol_rotate",
+        "milthmCol_flowSpeed",
+        "milthmCol_size",
+        "milthmCol_lineAlpha"
       ]
-    },
-    "visibleSelection": {
-      "line0": 15,
-      "line1": 14,
-      "line2": 13
     },
     "exceptions": 0,
     "visibleSelectionOk": true,
+    "specialLayerOk": true,
     "ok": true
   }
 }

@@ -10,6 +10,7 @@ import {
 import {
   ensureChartColumns, syncMilthmColumns, remapColumns, buildMilthmExportChart,
   milthmEventTypeLabels, semanticEvents, chartColumns, deriveSemantics,
+  semanticColumnKey, semanticColumnEvents, SEMANTIC_COLUMN_PREFIX,
 } from '../rpen-milthm-bridge/columns.mjs';
 
 const rpeEvent = (startBeat, endBeat, start, end) => ({
@@ -145,6 +146,57 @@ const sizeValues = line => semanticEvents(line).size.map(event => [Number(event.
   assert.equal(zeroInit, undefined, 'lineAlpha starting at beat 0 must not add an initialiser');
   void lineInit;
   console.log('[alpha init] ok');
+}
+
+// ---- 5) v0.7.9: multi-line semantic pseudo columns are adopted back on commit ----
+{
+  const ease = { type: 0, press: 0, isValueExp: false, cusValueExp: '', clipLeft: 0, clipRight: 1 };
+  const raw = (type, startBeat, endBeat, start, end = start) => ({ type, startTime: [startBeat, 0, 1], endTime: [endBeat, 0, 1], start, end, bearer_type: 0, bearer: 0, ease });
+  const source = {
+    fmt: 2,
+    meta: { background_dim: 0.6, name: 'semantic columns', background_artist: '', music_artist: '', charter: '', difficulty_name: '', difficulty: 0, offset: 0 },
+    bpms: [{ time: [0, 0, 1], bpm: 120 }],
+    lines: [{
+      index: 0,
+      notes: [{ index: 0, time: [0, 4, 1], endTime: [0, 4, 1], type: 0, isFake: false, isAlwaysPerfect: false }],
+      animations: [raw(0, 0, 16, 0), raw(1, 0, 16, 0), raw(8, 2, 6, 1), raw(3, 0, 16, 1.5)],
+    }],
+    storyboards: [],
+  };
+  const { chart } = importMilthmChart(source, {});
+  const ensured = ensureChartColumns(chart) ?? chart;
+  const synced = syncMilthmColumns(ensured);
+  const base = synced.judgeLineList[0];
+  const semantics = semanticEvents(base);
+  assert.ok((semantics.bodyAlpha ?? []).length > 0, 'bodyAlpha semantics present');
+  assert.ok((semantics.size ?? []).length > 0, 'size semantics present');
+
+  // simulate editing the "线体不透明度" and "轨道大小" pseudo columns
+  const bodyKey = semanticColumnKey('bodyAlpha');
+  const sizeKey = semanticColumnKey('size');
+  const bodyDisplay = semanticColumnEvents(semantics, 'bodyAlpha');
+  for (const event of bodyDisplay) { event.start = 200; event.end = 200; }
+  const sizeDisplay = semanticColumnEvents(semantics, 'size');
+  for (const event of sizeDisplay) { event.start = 2.5; event.end = 2.5; }
+  const edited = structuredClone(synced);
+  edited.judgeLineList[0].extended[bodyKey] = bodyDisplay;
+  edited.judgeLineList[0].extended[sizeKey] = sizeDisplay;
+  edited.judgeLineList[0].eventLayers[0][bodyKey] = bodyDisplay;
+  edited.judgeLineList[0].eventLayers[0][sizeKey] = sizeDisplay;
+
+  const adopted = syncMilthmColumns(edited);
+  const adoptedLine = adopted.judgeLineList[0];
+  const adoptedSemantics = semanticEvents(adoptedLine);
+  const realBody = (adoptedSemantics.bodyAlpha ?? []).filter(event => !event.syntheticInit);
+  assert.ok(realBody.length > 0, 'bodyAlpha real events kept');
+  for (const event of realBody) {
+    assert.ok(Math.abs(Number(event.start) - 200 / 255) < 1e-9, 'bodyAlpha adopted from the 0..255 pseudo column');
+    assert.ok(Math.abs(Number(event.end) - 200 / 255) < 1e-9, 'bodyAlpha adopted from the 0..255 pseudo column');
+  }
+  assert.deepEqual(adoptedSemantics.size.map(event => [Number(event.start), Number(event.end)]).slice(-1), [[2.5, 2.5]], 'size adopted from the pseudo column');
+  assert.ok(!Object.keys(adoptedLine.extended ?? {}).some(key => key.startsWith(SEMANTIC_COLUMN_PREFIX)), 'pseudo keys stripped from extended');
+  assert.ok(!Object.keys(adoptedLine.eventLayers?.[0] ?? {}).some(key => key.startsWith(SEMANTIC_COLUMN_PREFIX)), 'pseudo keys stripped from the draw layer');
+  console.log('[semantic columns] ok');
 }
 
 console.log('=== MULTI-EDIT TESTS PASSED ===');

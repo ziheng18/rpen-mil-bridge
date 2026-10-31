@@ -10,7 +10,8 @@ import {
 import {
   DEFAULT_COLUMNS, COLUMN_LABELS, COLUMN_LABELS_FULL, SLOT_CANDIDATES, semanticEvents, chartColumns,
   ensureChartColumns, syncMilthmColumns, remapColumns, buildMilthmExportChart, sceneSemanticArrays,
-  milthmEventTypeLabels,
+  milthmEventTypeLabels, SEMANTIC_COLUMNS, SEMANTIC_COLUMN_LABELS, semanticColumnKey, semanticColumnKind,
+  semanticColumnEvents,
 } from './columns.mjs';
 
 const MOD_ID = 'milthm-fmt2-bridge';
@@ -1248,6 +1249,7 @@ export async function activate(api) {
       ['speedEvents', COLUMN_LABELS[columns[4]] ?? '速度'],
       ...Object.entries(EXTENDED_TYPE_LABELS),
     ]);
+    for (const kind of SEMANTIC_COLUMNS) map.set(semanticColumnKey(kind), SEMANTIC_COLUMN_LABELS[kind] ?? kind);
     return map;
   };
   const headerLabels = () => {
@@ -1319,16 +1321,14 @@ export async function activate(api) {
   };
   patchTimelineHeaders();
 
-  /* ---------------- 多线编辑：事件类型下拉 + 「编辑事件列」勾选（所有事件种类） ---------------- */
-  // v0.7.5: the checkbox group lists ALL event kinds (X / Y / 旋转 / 不透明度 / 速度 / 缩放X /
-  // 缩放Y / 颜色 / 文字; 着色器 has no Milthm meaning and is omitted). Checked kinds are rendered
-  // as the event columns of the left multi-line timeline (each target line panel), in the order
-  // below. This is implemented by
-  //   - overriding timeline.eventTypes while multi-line events editing is active,
-  //   - merging the selected extended arrays (scaleX/scaleY/color/text) into the native event
-  //     layer for the draw call (restored right after), and
-  //   - repainting the header strip with the semantic labels (see the header block above).
-  // The 事件类型 dropdown of the batch-edit (多事件编辑) panel keeps the semantic labels too.
+  /* ---------------- 多线编辑：编辑事件列（全部普通层语义种类） + 事件类型下拉 ---------------- */
+  // v0.7.9: the checkbox group lists every kind editable in RPEN's normal (non-special) event
+  // columns — the same entries as the timeline column dropdowns: X / Y / 旋转 / 流速倍率 /
+  // 轨道大小 / 轨道整体不透明度 / 线体不透明度 / 线头不透明度 / 音符整体不透明度. Checked kinds are
+  // rendered as the left multi-line timeline columns: each kind's semantic events are projected
+  // into RPEN event arrays under `extended.milthmCol_<kind>` (and the draw layer) while editing,
+  // and syncMilthmColumns() adopts the edited arrays back into the semantic lists and strips the
+  // pseudo keys on every commit. RPEN's special event layer stays completely native.
   const EDIT_COLUMNS_STYLE = `
 .milthm-edit-columns{display:flex;flex-direction:column;gap:5px;margin:2px 0 6px;padding:7px 8px;border:1px solid #3c434f;border-radius:3px;background:#282c34}
 .milthm-edit-columns-title{font-size:11px;color:#aab3c0}
@@ -1337,46 +1337,38 @@ export async function activate(api) {
 .milthm-edit-columns-list input{margin:0;pointer-events:auto}
 `;
   api.style(EDIT_COLUMNS_STYLE);
-  const BASE_EVENT_TYPES = ['moveXEvents', 'moveYEvents', 'rotateEvents', 'alphaEvents', 'speedEvents'];
-  const EXTRA_EVENT_TYPES = ['scaleXEvents', 'scaleYEvents', 'colorEvents', 'textEvents'];
-  const ALL_EVENT_TYPES = [...BASE_EVENT_TYPES, ...EXTRA_EVENT_TYPES];
-  let editColumnTypes = new Set(BASE_EVENT_TYPES);
-  // v0.7.8: the 事件类型 dropdown only offers the kinds editable in the normal (non-multi-line,
-  // non-special) event layer; the special layer keeps RPEN's own native kinds.
-  const multiEditTypeOptions = () => isMilthmChart(editor.chart)
-    ? [['all', '全部'], ...milthmEventTypeLabels(chartColumns(editor.chart)).slice(1, 6)]
-    : (internals.multiEdit?.EVENT_BATCH_TYPES ?? null);
-  // v0.7.6: only the RPEN base (non-special) event columns are selectable here; the RPEN special
-  // event layer (缩放X / 缩放Y / 颜色 / 着色器 / 文字, the timeline "特殊" toggle) stays completely
-  // native and is edited there as usual.
-  const columnOptionsCompact = () => {
-    if (!isMilthmChart(editor.chart)) return [];
-    const columns = chartColumns(editor.chart);
-    return [
-      ['moveXEvents', COLUMN_LABELS[columns[0]] ?? 'X 坐标'],
-      ['moveYEvents', COLUMN_LABELS[columns[1]] ?? 'Y 坐标'],
-      ['rotateEvents', COLUMN_LABELS[columns[2]] ?? '旋转'],
-      ['alphaEvents', COLUMN_LABELS[columns[3]] ?? '不透明度'],
-      ['speedEvents', COLUMN_LABELS[columns[4]] ?? '速度'],
-    ];
+  const semanticKindLabel = kind => SEMANTIC_COLUMN_LABELS[kind] ?? kind;
+  let editColumnTypes = null;
+  let editColumnsSignature = null;
+  const ensureColumnDefaults = () => {
+    const chart = editor.chart;
+    if (!isMilthmChart(chart)) return;
+    const signature = chartColumns(chart).join(',');
+    if (editColumnsSignature === signature && editColumnTypes?.size) return;
+    editColumnsSignature = signature;
+    editColumnTypes = new Set(chartColumns(chart).filter(kind => SEMANTIC_COLUMNS.includes(kind)));
+    if (!editColumnTypes.size) editColumnTypes = new Set(['x', 'y', 'rotate', 'flowSpeed']);
+  };
+  const multiEditTypeOptions = () => {
+    if (!isMilthmChart(editor.chart)) return internals.multiEdit?.EVENT_BATCH_TYPES ?? null;
+    const session = editor.session;
+    if (session?.multiLineActive && session.multiLineMode === 'events' && !editor.timeline?.extended) {
+      return [['all', '全部'], ...SEMANTIC_COLUMNS.map(kind => [semanticColumnKey(kind), semanticKindLabel(kind)])];
+    }
+    return [['all', '全部'], ...milthmEventTypeLabels(chartColumns(editor.chart)).slice(1, 6)];
   };
   const columnEventTypes = () => {
     const chart = editor.chart;
     if (!isMilthmChart(chart)) return null;
-    // the RPEN special event layer keeps its native columns/labels and native editing
     if (editor.timeline?.extended) return null;
     const session = editor.session;
     if (!(session?.multiLineActive && session.multiLineMode === 'events')) return null;
-    if (!editColumnTypes.size) return null;
-    return ALL_EVENT_TYPES.filter(type => editColumnTypes.has(type));
+    ensureColumnDefaults();
+    if (!editColumnTypes?.size) return null;
+    return SEMANTIC_COLUMNS.filter(kind => editColumnTypes.has(kind)).map(semanticColumnKey);
   };
-  const lineEventList = (line, type) => {
-    if (!line) return [];
-    if (EXTRA_EVENT_TYPES.includes(type) || type === 'paintEvents') return line.extended?.[type] ?? [];
-    return line.eventLayers?.[0]?.[type] ?? [];
-  };
-  // The selected columns become the timeline's eventTypes (only while multi-line events editing
-  // is active). The original getter is restored on unload.
+  // The selected semantic columns become the timeline's eventTypes (only while multi-line events
+  // editing is active). The original getter is restored on unload.
   const timeline = editor.timeline;
   const timelinePrototype = timeline ? Object.getPrototypeOf(timeline) : null;
   const originalEventTypes = timelinePrototype ? Object.getOwnPropertyDescriptor(timelinePrototype, 'eventTypes') : null;
@@ -1392,73 +1384,72 @@ export async function activate(api) {
     });
     api.dispose(() => { try { delete timeline.eventTypes; } catch { /* ignore */ } });
   }
-  // Merge the selected extended arrays into the native layer for the duration of the draw call.
+  // Project the selected semantic kinds into the chart line data used by the drawing/interaction
+  // pipeline. The keys are removed again by syncMilthmColumns() on commit.
   const patchMultiLineColumns = () => {
     const target = editor.timeline;
     if (!target) return;
     api.patch(target, 'drawMultiLineEvents', previous => function (...args) {
-      const types = columnEventTypes();
+      const keys = columnEventTypes();
       const session = this.getSession?.() ?? editor.session;
-      const previousExtended = this.extended;
-      const restores = [];
-      if (types?.length && session?.chart) {
+      if (keys?.length && session?.chart) {
+        const chart = session.chart;
         const layerIndex = this.layer ?? 0;
         for (const lineIndex of session.targetLineIndices ?? []) {
-          const line = session.chart.judgeLineList?.[lineIndex];
-          const layer = line?.eventLayers?.[layerIndex];
-          if (!layer) continue;
-          const extended = line.extended ?? {};
-          const added = [];
-          for (const type of types) {
-            if (BASE_EVENT_TYPES.includes(type)) continue;
-            if (Object.hasOwn(layer, type)) continue;
-            layer[type] = extended[type] ?? [];
-            added.push(type);
+          const line = chart.judgeLineList?.[lineIndex];
+          if (!line) continue;
+          const semantics = semanticEvents(line);
+          const layer = line.eventLayers?.[layerIndex] ?? line.eventLayers?.[0];
+          line.extended = line.extended ?? {};
+          for (const key of keys) {
+            const kind = semanticColumnKind(key);
+            if (!kind) continue;
+            const events = semanticColumnEvents(semantics, kind);
+            line.extended[key] = events;
+            if (layer) layer[key] = events;
           }
-          if (added.length) restores.push({ layer, added });
         }
       }
-      try {
-        return previous.apply(this, args);
-      } finally {
-        this.extended = previousExtended;
-        for (const { layer, added } of restores) for (const type of added) delete layer[type];
-      }
+      return previous.apply(this, args);
     });
   };
   patchMultiLineColumns();
   // Drop events of columns that are not shown (they cannot be edited from the left timeline).
   const restrictEditableEvents = () => {
+    // the event-type dropdown depends on the editing mode; refresh it here because entering
+    // multi-line mode does not emit an editor:state event
+    try { adaptMultiEditTypes(); } catch { /* ignore */ }
     const chart = editor.chart;
     const session = editor.session;
     if (!session || !isMilthmChart(chart)) return;
     if (editor.timeline?.extended) return;
     if (!(session.multiLineActive && session.multiLineMode === 'events')) return;
-    if (!editColumnTypes.size) return;
-    const disabled = new Set(ALL_EVENT_TYPES.filter(type => !editColumnTypes.has(type)));
-    if (!disabled.size) return;
+    const allowed = new Set(columnEventTypes() ?? []);
+    if (!allowed.size) return;
     let changed = false;
     for (const [lineIndex, keys] of [...(session.multiEventSelection ?? new Map())]) {
-      const next = new Set([...keys].filter(key => !disabled.has(String(key).split(':')[0])));
+      const next = new Set([...keys].filter(key => allowed.has(String(key).split(':')[0])));
       if (next.size === keys.size) continue;
       changed = true;
       if (next.size) session.multiEventSelection.set(lineIndex, next);
       else session.multiEventSelection.delete(lineIndex);
     }
-    const current = new Set([...(session.eventSelection ?? [])].filter(key => !disabled.has(String(key).split(':')[0])));
+    const current = new Set([...(session.eventSelection ?? [])].filter(key => allowed.has(String(key).split(':')[0])));
     if (current.size !== (session.eventSelection?.size ?? 0)) { session.eventSelection = current; changed = true; }
     if (changed) { try { editor.invalidate?.(); } catch { /* ignore */ } }
   };
-  const applyEditColumnTypes = (types = []) => {
-    const next = new Set(types);
-    editColumnTypes = next.size ? next : new Set(BASE_EVENT_TYPES);
+  const applyEditColumnTypes = (kinds = []) => {
+    const next = new Set(kinds.filter(kind => SEMANTIC_COLUMNS.includes(kind)));
+    if (next.size) editColumnTypes = next;
+    else { editColumnsSignature = null; ensureColumnDefaults(); }
     restrictEditableEvents();
     try { editor.invalidate?.(); } catch { /* ignore */ }
   };
   const fillColumnCheckboxes = (list, types) => {
     const signature = types.map(([value, label]) => `${value}=${label}`).join('|');
+    const checked = new Set([...editColumnTypes ?? []].map(semanticColumnKey));
     if (list.dataset.milthmSignature === signature) {
-      list.querySelectorAll('input').forEach(input => { input.checked = editColumnTypes.has(input.value); });
+      list.querySelectorAll('input').forEach(input => { input.checked = checked.has(input.value); });
       return;
     }
     list.replaceChildren(...types.map(([value, label]) => {
@@ -1466,7 +1457,7 @@ export async function activate(api) {
       const input = document.createElement('input');
       input.type = 'checkbox';
       input.value = value;
-      input.checked = editColumnTypes.has(value);
+      input.checked = checked.has(value);
       const text = document.createElement('span');
       text.textContent = label;
       item.append(input, text);
@@ -1480,6 +1471,7 @@ export async function activate(api) {
     if (!host) return;
     const existing = host.querySelector('[data-milthm-multiline-columns]');
     if (!isMilthmChart(editor.chart)) { existing?.remove(); return; }
+    ensureColumnDefaults();
     let box = existing;
     if (!box) {
       box = document.createElement('div');
@@ -1490,7 +1482,9 @@ export async function activate(api) {
       title.textContent = '编辑事件列（勾选的列显示在左侧；特殊事件层保持 RPEN 原生）';
       const list = document.createElement('div');
       list.className = 'milthm-edit-columns-list';
-      list.addEventListener('change', () => applyEditColumnTypes([...list.querySelectorAll('input:checked')].map(input => input.value)));
+      list.addEventListener('change', () => applyEditColumnTypes(
+        [...list.querySelectorAll('input:checked')].map(input => semanticColumnKind(input.value)).filter(Boolean),
+      ));
       box.append(title, list);
       const expression = host.querySelector('.multi-line-expression-field');
       const listNode = host.querySelector('.multi-line-list');
@@ -1499,7 +1493,7 @@ export async function activate(api) {
       else host.append(box);
     }
     const list = box.querySelector('.milthm-edit-columns-list');
-    if (list) fillColumnCheckboxes(list, columnOptionsCompact());
+    if (list) fillColumnCheckboxes(list, SEMANTIC_COLUMNS.map(kind => [semanticColumnKey(kind), semanticKindLabel(kind)]));
   };
   let multiLinePanelPatched = false;
   const patchMultiLinePanel = () => {
@@ -1513,7 +1507,9 @@ export async function activate(api) {
     });
   };
   patchMultiLinePanel();
-  // The 事件类型 dropdown of the batch-edit (多事件编辑) panel keeps the semantic labels.
+  // The 事件类型 dropdown of the batch-edit (多事件编辑) panel follows the same kinds: the
+  // normal layer lists the 5 native columns, while multi-line events editing lists every semantic
+  // kind (values are the pseudo-column keys so the filter matches the selected events).
   const adaptMultiEditTypes = () => {
     const panel = editor.multiEdit;
     const root = panel?.root;

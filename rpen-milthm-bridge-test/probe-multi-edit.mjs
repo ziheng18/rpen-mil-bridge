@@ -1,9 +1,12 @@
-// Live probe: 多线编辑 adaptations for Milthm charts (v0.7.2 → v0.7.5).
-// - event-type dropdown labels follow the current column mapping (着色器 hidden);
-// - the timeline header strip shows the semantic column names (single- and multi-line mode);
-// - the 多线编辑 pane's 「编辑事件列」 checkbox group lists ALL event kinds; the checked kinds are
-//   rendered as the event columns of the left multi-line timeline and unchecking a kind hides +
-//   locks it (its events cannot be selected/edited).
+// Live probe: 多线编辑 adaptations for Milthm charts (v0.7.2 → v0.7.9).
+// - the batch-edit event-type dropdown follows the current mode:
+//     single-line: only the normal-layer native kinds; multi-line: every semantic kind
+//     (values are the semantic pseudo-column keys);
+// - the 「编辑事件列」 checkbox group lists all kinds editable in RPEN's normal (non-special)
+//   event columns (X/Y/旋转/流速倍率/轨道大小 + 4 transparency variants); checked kinds are shown
+//   as the left multi-line timeline columns (semantic pseudo columns) and are editable there;
+// - the timeline header strip shows the semantic column names;
+// - RPEN's special event layer (timeline 特殊) stays native.
 // Requires RPEN on :4173 and headless Edge CDP on :9333.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -48,14 +51,19 @@ const READ_CHECKBOXES = `(() => {
   if (!list) return null;
   return [...list.querySelectorAll('label')].map(label => ({ value: label.querySelector('input')?.value, label: label.textContent, checked: Boolean(label.querySelector('input')?.checked) }));
 })()`;
+const PSEUDO = kind => `milthmCol_${kind}`;
 const BASE_LABELS = ['X 坐标', 'Y 坐标', '旋转', '线体不透明度（LineBodyTransparency 8）', '流速倍率'];
 const REMAPPED_LABELS = ['X 坐标', 'Y 坐标', '旋转', '轨道整体不透明度（线头+线身，Transparency 2）', '流速倍率'];
-const HEADER_LABELS = ['X 坐标', 'Y 坐标', '旋转', '轨道整体不透明度', '流速倍率'];
-const CHECKBOX_LABELS = ['X 坐标', 'Y 坐标', '旋转', '轨道整体不透明度', '流速倍率'];
-const CHECKED_COLUMNS = ['moveXEvents', 'rotateEvents', 'alphaEvents', 'speedEvents'];
-const CHECKED_LABELS = ['X 坐标', '旋转', '轨道整体不透明度', '流速倍率'];
-const EXPECTED = ['全部', ...BASE_LABELS];
-const EXPECTED_KEYS = ['all', 'moveXEvents', 'moveYEvents', 'rotateEvents', 'alphaEvents', 'speedEvents'];
+const SINGLE_HEADER_LABELS = ['X 坐标', 'Y 坐标', '旋转', '轨道整体不透明度', '流速倍率'];
+const DEFAULT_HEADER_LABELS = ['X 坐标', 'Y 坐标', '旋转', '流速倍率', '轨道整体不透明度'];
+const NORMAL_LAYER_KINDS = ['x', 'y', 'rotate', 'flowSpeed', 'size', 'lineAlpha', 'bodyAlpha', 'headAlpha', 'wholeAlpha'];
+const CHECKBOX_LABELS = ['X 坐标', 'Y 坐标', '旋转', '流速倍率', '轨道大小', '轨道整体不透明度', '线体不透明度', '线头不透明度', '音符整体不透明度'];
+const DEFAULT_COLUMN_KINDS = ['x', 'y', 'rotate', 'flowSpeed', 'lineAlpha'];
+const CHECKED_KINDS = ['x', 'rotate', 'flowSpeed', 'size', 'lineAlpha'];
+const CHECKED_COLUMNS = ['x', 'rotate', 'flowSpeed', 'size', 'lineAlpha'].map(PSEUDO);
+const CHECKED_LABELS = ['X 坐标', '旋转', '流速倍率', '轨道大小', '轨道整体不透明度'];
+const SINGLE_LINE_EXPECTED = ['全部', ...BASE_LABELS];
+const MULTI_LINE_EXPECTED = ['全部', ...NORMAL_LAYER_KINDS.map(kind => CHECKBOX_LABELS[NORMAL_LAYER_KINDS.indexOf(kind)])];
 const hasPaint = options => options.some(option => option.value === 'paintEvents');
 const labelsOf = options => options.map(option => option.label);
 const keysOf = options => options.map(option => option.value);
@@ -76,8 +84,7 @@ try {
     await manager.enable('milthm-fmt2-bridge');
     await new Promise(resolve => setTimeout(resolve, 1500));
     const record = manager.records.get('milthm-fmt2-bridge');
-    const state = manager.runtime.loaded.get('milthm-fmt2-bridge');
-    return { loaded: state?.status, version: record?.manifest?.version };
+    return { loaded: manager.runtime.loaded.get('milthm-fmt2-bridge')?.status, version: record?.manifest?.version };
   })()`));
 
   const doc = await send('DOM.getDocument', { depth: -1, pierce: true });
@@ -85,7 +92,7 @@ try {
   await send('DOM.setFileInputFiles', { nodeId: input.nodeId, files: [CHART_ZIP] });
   await waitFor(`(() => { const chart = window.rpenMods.editor?.chart; return chart?.['x-milthm']?.columns && chart.judgeLineList?.length === 19 ? true : null; })()`, 120000, 'import');
 
-  // ---- v0.7.2: event-type dropdown of the batch-edit panel ----
+  // ---- single-line mode: multi-edit event-type dropdown lists the normal-layer native kinds ----
   step('open-panel', await evaluate(`(() => {
     const editor = window.rpenMods.editor;
     editor.multiEdit.open('events');
@@ -93,7 +100,7 @@ try {
   })()`));
   await waitFor(`(() => Boolean(${FIND_FILTER}))()`, 10000, 'panel dropdown');
   const initial = await evaluate(READ_OPTIONS);
-  step('dropdown-default-columns', initial);
+  step('dropdown-single-line', initial);
 
   step('remap', await evaluate(`(() => {
     const editor = window.rpenMods.editor;
@@ -110,7 +117,7 @@ try {
   const remapped = await evaluate(READ_OPTIONS);
   step('dropdown-remapped-columns', remapped);
 
-  // ---- v0.7.3: timeline header labels (single-line) ----
+  // ---- header labels (single line) ----
   await sleep(600);
   const single = await readTimeline();
   step('header-single-line', single);
@@ -127,11 +134,17 @@ try {
     return { active: session.multiLineActive, mode: session.multiLineMode, lines: session.targetLineIndices.slice() };
   })()`));
   await waitFor(`(() => { const session = window.rpenMods.editor.session; return session.multiLineActive && session.multiLineMode === 'events' && session.targetLineIndices.length === 3; })()`, 5000, 'multi-line mode');
-  await sleep(900);
+  await sleep(1200);
   const defaultMulti = await readTimeline();
   step('header-multi-line-default', defaultMulti);
+  await waitFor(`(() => {
+    const filter = ${FIND_FILTER};
+    return filter && [...filter.options].some(option => option.value === '${PSEUDO('size')}') ? true : null;
+  })()`, 10000, 'multi-line dropdown');
+  const multiOptions = await evaluate(READ_OPTIONS);
+  step('dropdown-multi-line', multiOptions);
 
-  // ---- v0.7.5: 多线编辑 pane checkbox group with ALL event kinds ----
+  // ---- 多线编辑 pane: checkbox group lists all normal-layer kinds ----
   await evaluate(`(() => {
     const editor = window.rpenMods.editor;
     editor.activatePane('multi-line');
@@ -143,52 +156,75 @@ try {
   const checkboxes = await evaluate(READ_CHECKBOXES);
   step('edit-columns-list', checkboxes);
 
-  // select a base subset: X/旋转/整体不透明度/流速 (drop Y)
+  // select a subset incl. size and the alpha variant: x/rotate/flowSpeed/size/lineAlpha (drop y)
   step('check-columns', await evaluate(`(() => {
     const list = document.querySelector('#multi-line-editor [data-milthm-multiline-columns] .milthm-edit-columns-list');
     const wanted = new Set(${JSON.stringify(CHECKED_COLUMNS)});
     for (const input of list.querySelectorAll('input')) input.checked = wanted.has(input.value);
     list.dispatchEvent(new Event('change', { bubbles: true }));
-    const editor = window.rpenMods.editor;
     return { checked: [...list.querySelectorAll('input:checked')].map(input => input.value) };
   })()`));
-  await waitFor(`(() => { const timeline = window.rpenMods.editor.timeline; const types = timeline?.eventTypes ?? []; return types.length === 4 && types.includes('speedEvents') ? true : null; })()`, 8000, 'selected columns become timeline columns');
-  await sleep(700);
+  await waitFor(`(() => { const types = window.rpenMods.editor.timeline?.eventTypes ?? []; return types.length === 5 && types.includes('${PSEUDO('size')}') ? true : null; })()`, 8000, 'selected semantic columns become timeline columns');
+  await sleep(800);
   const selectedColumns = await readTimeline();
   step('timeline-selected-columns', selectedColumns);
 
-  // hidden kinds are locked: a manually selected Y event is dropped on the next frame
+  // hidden kinds are locked: a manually selected Y pseudo event is dropped on the next frame
   step('restriction-blocks-hidden', await evaluate(`(async () => {
     const editor = window.rpenMods.editor;
     const session = editor.session;
-    session.multiEventSelection.set(0, new Set(['moveYEvents:0']));
+    session.multiEventSelection.set(0, new Set(['${PSEUDO('y')}:0']));
     editor.invalidate?.();
-    await new Promise(resolve => setTimeout(resolve, 800));
-    return { yRemoved: !session.multiEventSelection.get(0)?.has('moveYEvents:0') };
+    await new Promise(resolve => setTimeout(resolve, 900));
+    return { yRemoved: !session.multiEventSelection.get(0)?.has('${PSEUDO('y')}:0') };
   })()`));
 
-  // selecting visible events still works: the checked columns' events can be batch-selected
+  // visible semantic columns are selectable (events exist in the injected pseudo arrays)
   step('select-visible', await evaluate(`(() => {
     const editor = window.rpenMods.editor;
     const session = editor.session;
     const chart = editor.chart;
-    session.multiEventSelection.set(0, new Set());
+    session.multiEventSelection.clear();
     for (const lineIndex of session.targetLineIndices) {
       const line = chart.judgeLineList?.[lineIndex];
       const keys = new Set();
-      (line?.eventLayers?.[0]?.moveXEvents ?? []).forEach((_event, index) => keys.add('moveXEvents:' + index));
-      (line?.eventLayers?.[0]?.alphaEvents ?? []).forEach((_event, index) => keys.add('alphaEvents:' + index));
-      (line?.extended?.colorEvents ?? []).forEach((_event, index) => keys.add('colorEvents:' + index));
+      for (const kind of ${JSON.stringify(CHECKED_KINDS)}) {
+        const key = 'milthmCol_' + kind;
+        (line?.extended?.[key] ?? []).forEach((_event, index) => keys.add(key + ':' + index));
+      }
       session.multiEventSelection.set(lineIndex, keys);
     }
     session.eventSelection = new Set(session.multiEventSelection.get(session.lineIndex) ?? []);
     editor.invalidate?.();
-    return { line0: session.multiEventSelection.get(0)?.size ?? 0, line1: session.multiEventSelection.get(1)?.size ?? 0, line2: session.multiEventSelection.get(2)?.size ?? 0 };
+    return {
+      line0: session.multiEventSelection.get(0)?.size ?? 0,
+      line1: session.multiEventSelection.get(1)?.size ?? 0,
+      line2: session.multiEventSelection.get(2)?.size ?? 0,
+      injected: Object.fromEntries(${JSON.stringify(CHECKED_KINDS)}.map(kind => [kind, (editor.chart.judgeLineList?.[0]?.extended?.['milthmCol_' + kind] ?? []).length])),
+    };
   })()`));
-  await sleep(700);
+  await sleep(800);
 
-  // RPEN's special event layer must stay native: switching the timeline to 特殊 shows its own
-  // five columns (缩放X/缩放Y/颜色/着色器/文字) and our selection must not interfere.
+  // commit an edit made in a semantic pseudo column: syncMilthmColumns() must adopt it into the
+  // semantic lists and strip the pseudo keys from the committed chart
+  step('edit-pseudo-commit', await evaluate(`(() => {
+    const editor = window.rpenMods.editor;
+    const chart = structuredClone(editor.chart);
+    const line = chart.judgeLineList[0];
+    const events = line.extended?.['milthmCol_x'];
+    if (!events?.length) return { error: 'no pseudo x events' };
+    events[0] = { ...events[0], start: 123, end: 123 };
+    editor.commit('probe pseudo column edit', chart);
+    const after = editor.chart.judgeLineList[0];
+    const semantics = after?.['x-milthm']?.events;
+    return {
+      xStart: semantics?.x?.[0]?.start ?? null,
+      pseudoInExtended: Object.keys(after?.extended ?? {}).filter(key => key.startsWith('milthmCol_')),
+      pseudoInLayer: Object.keys(after?.eventLayers?.[0] ?? {}).filter(key => key.startsWith('milthmCol_')),
+    };
+  })()`));
+
+  // RPEN's special event layer must stay native
   step('special-layer-native', await evaluate(`(async () => {
     const editor = window.rpenMods.editor;
     editor.timeline.extended = true;
@@ -203,35 +239,43 @@ try {
 
   const result = {
     version: report.steps.find(entry => entry.name === 'mod')?.data?.version,
-    defaultLabels: labelsOf(initial?.options ?? []),
-    defaultMatches: JSON.stringify(labelsOf(initial?.options ?? [])) === JSON.stringify(EXPECTED),
-    defaultKeys: keysOf(initial?.options ?? []),
-    onlyNormalLayerKinds: JSON.stringify(keysOf(initial?.options ?? [])) === JSON.stringify(EXPECTED_KEYS),
+    singleLineOptions: labelsOf(initial?.options ?? []),
+    singleLineOk: JSON.stringify(keysOf(initial?.options ?? [])) === JSON.stringify(['all', 'moveXEvents', 'moveYEvents', 'rotateEvents', 'alphaEvents', 'speedEvents'])
+      && JSON.stringify(labelsOf(initial?.options ?? [])) === JSON.stringify(SINGLE_LINE_EXPECTED),
     paintHiddenInitially: !hasPaint(initial?.options ?? []),
     remappedLabelOk: (remapped?.options ?? []).find(option => option.value === 'alphaEvents')?.label === REMAPPED_LABELS[3],
-    paintHiddenAfterRemap: !hasPaint(remapped?.options ?? []),
-    singleHeaderOk: JSON.stringify(single.header) === JSON.stringify(HEADER_LABELS),
-    checkoutDefaults: (checkboxes ?? []).map(item => ({ value: item.value, label: item.label, checked: item.checked })),
+    multiLineOptions: keysOf(multiOptions?.options ?? []),
+    multiLineLabels: labelsOf(multiOptions?.options ?? []),
+    multiLineOk: JSON.stringify(keysOf(multiOptions?.options ?? [])) === JSON.stringify(['all', ...NORMAL_LAYER_KINDS.map(PSEUDO)])
+      && JSON.stringify(labelsOf(multiOptions?.options ?? [])) === JSON.stringify(MULTI_LINE_EXPECTED),
+    singleHeaderOk: JSON.stringify(single.header) === JSON.stringify(SINGLE_HEADER_LABELS),
+    checkboxLabels: (checkboxes ?? []).map(item => item.label),
     checkboxLabelsOk: JSON.stringify((checkboxes ?? []).map(item => item.label)) === JSON.stringify(CHECKBOX_LABELS),
-    defaultColumnsOk: JSON.stringify(defaultMulti.eventTypes) === JSON.stringify(['moveXEvents', 'moveYEvents', 'rotateEvents', 'alphaEvents', 'speedEvents']),
-    defaultHeaderOk: JSON.stringify(defaultMulti.header) === JSON.stringify(HEADER_LABELS),
+    defaultChecked: (checkboxes ?? []).filter(item => item.checked).map(item => item.value),
+    defaultCheckedOk: JSON.stringify((checkboxes ?? []).filter(item => item.checked).map(item => item.value)) === JSON.stringify(DEFAULT_COLUMN_KINDS.map(PSEUDO)),
+    defaultColumnsOk: JSON.stringify(defaultMulti.eventTypes) === JSON.stringify(DEFAULT_COLUMN_KINDS.map(PSEUDO)),
+    defaultHeaderOk: JSON.stringify(defaultMulti.header) === JSON.stringify(DEFAULT_HEADER_LABELS),
     selectedColumns: selectedColumns.eventTypes,
     selectedHeader: selectedColumns.header,
     selectedColumnsOk: JSON.stringify(selectedColumns.eventTypes) === JSON.stringify(CHECKED_COLUMNS),
     selectedHeaderOk: JSON.stringify(selectedColumns.header) === JSON.stringify(CHECKED_LABELS),
     hiddenLocked: Boolean(report.steps.find(entry => entry.name === 'restriction-blocks-hidden')?.data?.yRemoved),
-    specialLayer: report.steps.find(entry => entry.name === 'special-layer-native')?.data ?? null,
+    pseudoCommit: report.steps.find(entry => entry.name === 'edit-pseudo-commit')?.data ?? null,
     visibleSelection: report.steps.find(entry => entry.name === 'select-visible')?.data ?? null,
+    specialLayer: report.steps.find(entry => entry.name === 'special-layer-native')?.data ?? null,
     exceptions: exceptions.length,
   };
   const visible = result.visibleSelection;
-  result.visibleSelectionOk = Boolean(visible) && Object.values(visible).every(count => count > 0);
-  result.ok = Boolean(result.version) && result.defaultMatches && result.paintHiddenInitially && result.onlyNormalLayerKinds && result.remappedLabelOk
-    && result.paintHiddenAfterRemap && result.singleHeaderOk && result.checkboxLabelsOk && result.defaultColumnsOk
-    && result.defaultHeaderOk && result.selectedColumnsOk && result.selectedHeaderOk && result.hiddenLocked
-    && result.visibleSelectionOk
-    && JSON.stringify(result.specialLayer?.extendedTypes ?? []) === JSON.stringify(['scaleXEvents', 'scaleYEvents', 'colorEvents', 'paintEvents', 'textEvents'])
-    && JSON.stringify(result.specialLayer?.restoredTypes ?? []) === JSON.stringify(["moveXEvents","rotateEvents","alphaEvents","speedEvents"])
+  result.visibleSelectionOk = Boolean(visible) && [visible.line0, visible.line1, visible.line2].every(count => count > 0);
+  result.specialLayerOk = JSON.stringify(result.specialLayer?.extendedTypes ?? []) === JSON.stringify(['scaleXEvents', 'scaleYEvents', 'colorEvents', 'paintEvents', 'textEvents'])
+    && JSON.stringify(result.specialLayer?.restoredTypes ?? []) === JSON.stringify(CHECKED_COLUMNS);
+  result.ok = Boolean(result.version) && result.singleLineOk && result.paintHiddenInitially && result.remappedLabelOk
+    && result.multiLineOk && result.singleHeaderOk && result.checkboxLabelsOk && result.defaultCheckedOk
+    && result.defaultColumnsOk && result.defaultHeaderOk && result.selectedColumnsOk && result.selectedHeaderOk
+    && result.hiddenLocked && result.visibleSelectionOk && result.specialLayerOk
+    && Number(result.pseudoCommit?.xStart) === 123
+    && (result.pseudoCommit?.pseudoInExtended ?? []).length === 0
+    && (result.pseudoCommit?.pseudoInLayer ?? []).length === 0
     && result.exceptions === 0;
 
   await evaluate(`(() => { try { window.rpenMods.editor.activatePane('multi-line'); } catch (error) { /* ignore */ } return true; })()`);

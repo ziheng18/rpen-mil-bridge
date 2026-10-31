@@ -27,6 +27,32 @@ const FLOAT_CANDIDATES = ['x', 'y', 'rotate', 'flowSpeed', 'size', 'bodyAlpha', 
 const ALPHA_CANDIDATES = ['lineAlpha', 'bodyAlpha', 'headAlpha', 'wholeAlpha'];
 export const SLOT_CANDIDATES = [FLOAT_CANDIDATES, FLOAT_CANDIDATES, FLOAT_CANDIDATES, ALPHA_CANDIDATES, FLOAT_CANDIDATES];
 
+/* ---------------- semantic pseudo columns (多线编辑事件列) ---------------- */
+// Every kind editable in RPEN's normal (non-special) event columns can be shown as a multi-line
+// editing column: the selected semantics are projected into RPE-style event arrays and stored
+// under `extended.milthmCol_<kind>` (and the draw layer) while editing; syncMilthmColumns()
+// adopts them back into the semantic lists and strips the pseudo keys on every commit.
+export const SEMANTIC_COLUMN_PREFIX = 'milthmCol_';
+export const SEMANTIC_COLUMNS = ['x', 'y', 'rotate', 'flowSpeed', 'size', 'lineAlpha', 'bodyAlpha', 'headAlpha', 'wholeAlpha'];
+export const SEMANTIC_COLUMN_LABELS = {
+  x: 'X 坐标', y: 'Y 坐标', rotate: '旋转', flowSpeed: '流速倍率', size: '轨道大小',
+  lineAlpha: '轨道整体不透明度', bodyAlpha: '线体不透明度', headAlpha: '线头不透明度', wholeAlpha: '音符整体不透明度',
+};
+export const semanticColumnKey = kind => SEMANTIC_COLUMN_PREFIX + kind;
+export const semanticColumnKind = key => typeof key === 'string' && key.startsWith(SEMANTIC_COLUMN_PREFIX)
+  ? key.slice(SEMANTIC_COLUMN_PREFIX.length) : null;
+export const isSemanticColumnKind = kind => SEMANTIC_COLUMNS.includes(kind);
+// semantics -> editable display events (alpha channels use RPEN's integer 0..255 carrier)
+export function semanticColumnEvents(semantics, kind) {
+  if (ALPHA_KEYS.has(kind)) return (semantics?.[kind] ?? []).map(raw => rawToCarrierEvent(raw));
+  return cloneEvents(semantics?.[kind] ?? []);
+}
+// edited display events -> semantics (keeps the Milthm snapshots for untouched events)
+export function semanticColumnRawEvents(events, kind) {
+  if (ALPHA_KEYS.has(kind)) return (events ?? []).map(event => carrierEventToRaw(event, MIL_ANIM_TYPES[kind]));
+  return cloneEvents(events ?? []);
+}
+
 /**
  * Options for RPEN's 多线编辑 "事件类型" dropdown while a Milthm chart is active.
  * RPEN's native 5 event columns are the Milthm display slots; their labels are replaced by the
@@ -411,6 +437,24 @@ export function syncMilthmColumns(chart) {
     if (semantics.legacy?.length) {
       // v0.4 charts kept Milthm Transparency(2) line events as an uneditable legacy list.
       semantics = { ...semantics, lineAlpha: [...(semantics.lineAlpha ?? []), ...rpeEventsToLineAlphaRaw(semantics.legacy)], legacy: [] };
+    }
+    // Adopt multi-line semantic pseudo columns (extended.milthmCol_<kind> / layer keys) back into
+    // the semantic lists, then remove the temporary keys so the committed chart stays clean.
+    {
+      let strippedExtended = null;
+      for (const [key, value] of Object.entries(line.extended ?? {})) {
+        const kind = semanticColumnKind(key);
+        if (!isSemanticColumnKind(kind) || !Array.isArray(value)) continue;
+        semantics[kind] = semanticColumnRawEvents(value, kind);
+        (strippedExtended ??= { ...line.extended });
+        delete strippedExtended[key];
+      }
+      if (strippedExtended) line.extended = strippedExtended;
+      for (const layer of (line.eventLayers ?? [])) {
+        if (!layer || typeof layer !== 'object') continue;
+        const keys = Object.keys(layer).filter(key => isSemanticColumnKind(semanticColumnKind(key)));
+        for (const key of keys) delete layer[key];
+      }
     }
     // Milthm has a single Size(3) track, mirrored into RPEN's extended scaleX/scaleY columns.
     // RPEN's multi-line edit (and the extended event view) can edit those native arrays directly,
