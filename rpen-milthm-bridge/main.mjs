@@ -449,6 +449,119 @@ export async function activate(api) {
     if (isMilthmChart(chart) && this.scene && this.scene.__milthmFlow !== previewFlowMultiplier()) this.scene.chart = null;
     return previous.apply(this, args);
   });
+  /* ---------------- 预览框 UI：Milthm 风格 HUD ---------------- */
+  // RPEN's preview draws a Phigros-like HUD (ui/game-ui.mjs): skin Pause image, score top-right,
+  // combo number + "combo" caption, name/level at the bottom, progress bar. For Milthm charts we
+  // replace that pass with Milthm's layout (v0.7.6):
+  //  - pause: a slightly transparent white circle with two vertical bars knocked out (even-odd);
+  //  - song title right of the pause button, difficulty underneath (smaller and dimmer);
+  //  - score in the top-right, a faint "100%" under it;
+  //  - the centred combo block shows "All Perfect" above and the combo number below.
+  // Reference proportions (from Milthm's in-game UI): pause circle diameter ≈ 7.1% of the preview
+  // height, song title ≈ 3.8%, difficulty ≈ 2.7%, score ≈ 4.2%, "100%" ≈ 2.7%, combo ≈ 4.9%.
+  const drawMilthmPreviewUi = (preview, context, chart, seconds, frame) => {
+    const viewport = frame?.viewport ?? { left: 0, top: 0, width: 0, height: 0 };
+    const scale = frame?.scale ?? 1;
+    if (!(viewport.width > 0) || !(scale > 0)) return;
+    const left = viewport.left;
+    const top = viewport.top;
+    const width = viewport.width;
+    const height = viewport.height;
+    if (!(height > 40)) return;
+    const atX = fraction => left + width * fraction;
+    const atY = fraction => top + height * fraction;
+    const size = fraction => Math.max(7, fraction * height);
+    const font = fraction => `${Math.round(size(fraction))}px RPEGame, sans-serif`;
+    const duration = Math.max(0.001, Number(preview.duration) || 600);
+    const progress = Math.max(0, Math.min(1, (seconds + (Number(chart.META?.offset) || 0) / 1000) / duration));
+    const times = preview.completionTimes ?? [];
+    let combo = 0;
+    while (combo < times.length && times[combo] < seconds) combo += 1;
+    const score = times.length ? Math.round(1000000 * combo / times.length) : 0;
+    const scoreText = String(score).padStart(7, '0');
+    const title = String(chart.META?.name ?? '').trim() || '未命名';
+    const level = String(chart.META?.level ?? '').trim();
+    context.save();
+    // progress bar (kept from RPEN's HUD, at the very top edge)
+    context.globalAlpha = 1;
+    context.fillStyle = 'rgb(125,125,125)';
+    context.fillRect(left, atY(0.004), width * progress, Math.max(2, size(0.009)));
+    // pause: translucent white circle with two vertical bars knocked out
+    const centerX = atX(0.050);
+    const centerY = atY(0.0932);
+    const radius = size(0.0355);
+    const barWidth = size(0.0078);
+    const barHeight = size(0.031);
+    const gap = size(0.0111);
+    context.globalAlpha = 0.55;
+    context.fillStyle = '#ffffff';
+    context.beginPath();
+    context.arc(centerX, centerY, radius, 0, Math.PI * 2, false);
+    if (typeof context.roundRect === 'function') {
+      context.roundRect(centerX - gap / 2 - barWidth, centerY - barHeight / 2, barWidth, barHeight, barWidth / 2);
+      context.roundRect(centerX + gap / 2, centerY - barHeight / 2, barWidth, barHeight, barWidth / 2);
+    } else {
+      context.rect(centerX - gap / 2 - barWidth, centerY - barHeight / 2, barWidth, barHeight);
+      context.rect(centerX + gap / 2, centerY - barHeight / 2, barWidth, barHeight);
+    }
+    context.fill('evenodd');
+    // song title and difficulty, to the right of the pause button
+    const textLeft = atX(0.1004);
+    const textMaxWidth = Math.max(60, left + width - textLeft - size(0.02));
+    context.textAlign = 'left';
+    context.textBaseline = 'middle';
+    context.globalAlpha = 0.92;
+    context.fillStyle = '#ffffff';
+    context.font = font(0.0377);
+    context.fillText(title, textLeft, atY(0.0888), textMaxWidth);
+    if (level) {
+      context.globalAlpha = 0.55;
+      context.font = font(0.0266);
+      context.fillText(level, textLeft, atY(0.1243), textMaxWidth);
+    }
+    // score in the top-right corner, faint 100% below it
+    const scoreRight = atX(0.9711);
+    context.textAlign = 'right';
+    context.textBaseline = 'top';
+    context.globalAlpha = 1;
+    context.fillStyle = '#ffffff';
+    context.font = font(0.0422);
+    context.fillText(scoreText, scoreRight, atY(0.0555));
+    context.globalAlpha = 0.55;
+    context.font = font(0.0266);
+    context.fillText('100%', scoreRight, atY(0.1075));
+    // "All Perfect" above the centred combo number
+    if (combo >= 3) {
+      context.textAlign = 'center';
+      context.textBaseline = 'middle';
+      context.fillStyle = '#ffffff';
+      context.globalAlpha = 0.9;
+      context.font = font(0.0289);
+      context.fillText('All Perfect', atX(0.5), atY(0.070));
+      context.globalAlpha = 1;
+      context.font = font(0.0488);
+      context.fillText(String(combo), atX(0.5), atY(0.122));
+    }
+    context.restore();
+    preview.__milthmHud = {
+      title, level, score: scoreText, accuracy: '100%', combo,
+      allPerfect: combo >= 3 ? 'All Perfect' : null,
+      seconds,
+      firstCompletion: times[0] ?? null,
+      lastCompletion: times[times.length - 1] ?? null,
+      pause: { x: centerX, y: centerY, radius, barWidth, barHeight, gap },
+      scorePosition: { x: scoreRight, y: atY(0.0555) },
+      referenceHeight: height,
+    };
+  };
+  api.patch(Preview.prototype, 'drawUi', previous => function (context, chart, tempo, seconds, selectedLine, frame) {
+    if (!isMilthmChart(chart)) return previous.apply(this, arguments);
+    try {
+      drawMilthmPreviewUi(this, context, chart, seconds, frame ?? {});
+    } catch (error) { api.log('Milthm 预览 UI 绘制失败', error); }
+    return undefined;
+  });
+
   /* ---------------- text font: bundled ChillRoundF replaces RPEN's RPE/RPEGame faces ---------------- */
   // RPEN draws UI / editor / timeline / preview text with its bundled families RPE and RPEGame
   // (styles.css @font-face -> assets/rpe/fonts/cmdysj.ttf). A later @font-face rule with the same
@@ -1138,6 +1251,7 @@ export async function activate(api) {
     return map;
   };
   const headerLabels = () => {
+    if (editor.timeline?.extended) return null;
     const map = headerLabelMap();
     if (!map) return null;
     const types = editor.timeline?.eventTypes ?? [];
@@ -1230,6 +1344,9 @@ export async function activate(api) {
   const multiEditTypeOptions = () => isMilthmChart(editor.chart)
     ? milthmEventTypeLabels(chartColumns(editor.chart))
     : (internals.multiEdit?.EVENT_BATCH_TYPES ?? null);
+  // v0.7.6: only the RPEN base (non-special) event columns are selectable here; the RPEN special
+  // event layer (缩放X / 缩放Y / 颜色 / 着色器 / 文字, the timeline "特殊" toggle) stays completely
+  // native and is edited there as usual.
   const columnOptionsCompact = () => {
     if (!isMilthmChart(editor.chart)) return [];
     const columns = chartColumns(editor.chart);
@@ -1239,15 +1356,13 @@ export async function activate(api) {
       ['rotateEvents', COLUMN_LABELS[columns[2]] ?? '旋转'],
       ['alphaEvents', COLUMN_LABELS[columns[3]] ?? '不透明度'],
       ['speedEvents', COLUMN_LABELS[columns[4]] ?? '速度'],
-      ['scaleXEvents', '轨道大小·X'],
-      ['scaleYEvents', '轨道大小·Y'],
-      ['colorEvents', '轨道颜色'],
-      ['textEvents', '轨道文字'],
     ];
   };
   const columnEventTypes = () => {
     const chart = editor.chart;
     if (!isMilthmChart(chart)) return null;
+    // the RPEN special event layer keeps its native columns/labels and native editing
+    if (editor.timeline?.extended) return null;
     const session = editor.session;
     if (!(session?.multiLineActive && session.multiLineMode === 'events')) return null;
     if (!editColumnTypes.size) return null;
@@ -1285,7 +1400,6 @@ export async function activate(api) {
       const previousExtended = this.extended;
       const restores = [];
       if (types?.length && session?.chart) {
-        this.extended = false;
         const layerIndex = this.layer ?? 0;
         for (const lineIndex of session.targetLineIndices ?? []) {
           const line = session.chart.judgeLineList?.[lineIndex];
@@ -1316,6 +1430,7 @@ export async function activate(api) {
     const chart = editor.chart;
     const session = editor.session;
     if (!session || !isMilthmChart(chart)) return;
+    if (editor.timeline?.extended) return;
     if (!(session.multiLineActive && session.multiLineMode === 'events')) return;
     if (!editColumnTypes.size) return;
     const disabled = new Set(ALL_EVENT_TYPES.filter(type => !editColumnTypes.has(type)));
@@ -1370,7 +1485,7 @@ export async function activate(api) {
       box.dataset.milthmMultilineColumns = '1';
       const title = document.createElement('div');
       title.className = 'milthm-edit-columns-title';
-      title.textContent = '编辑事件列（勾选的列显示在左侧；未勾选的列不可编辑）';
+      title.textContent = '编辑事件列（勾选的列显示在左侧；特殊事件层保持 RPEN 原生）';
       const list = document.createElement('div');
       list.className = 'milthm-edit-columns-list';
       list.addEventListener('change', () => applyEditColumnTypes([...list.querySelectorAll('input:checked')].map(input => input.value)));

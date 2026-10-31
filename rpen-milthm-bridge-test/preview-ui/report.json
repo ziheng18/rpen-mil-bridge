@@ -1,0 +1,134 @@
+{
+  "steps": [
+    {
+      "name": "mod",
+      "data": {
+        "loaded": "loaded",
+        "version": "0.7.6"
+      }
+    },
+    {
+      "name": "open-preview",
+      "data": {
+        "visible": true
+      }
+    },
+    {
+      "name": "hud-late",
+      "data": {
+        "title": "Class Memories",
+        "level": "Cloudburst 8",
+        "score": "0208138",
+        "accuracy": "100%",
+        "combo": 133,
+        "allPerfect": "All Perfect",
+        "seconds": 30,
+        "firstCompletion": 1.6551724137931034,
+        "lastCompletion": 145.55172413793105,
+        "pause": {
+          "x": 82.9,
+          "y": 58.9024,
+          "radius": 22.435999999999996,
+          "barWidth": 7,
+          "barHeight": 19.592,
+          "gap": 7.0152
+        },
+        "scorePosition": {
+          "x": 956.1028,
+          "y": 35.076
+        },
+        "referenceHeight": 632,
+        "ringPixel": [
+          149,
+          148,
+          147,
+          255
+        ],
+        "holePixel": [
+          19,
+          17,
+          16,
+          255
+        ],
+        "ringLum": 444,
+        "holeLum": 52,
+        "canvas": {
+          "width": 1019,
+          "height": 632,
+          "ratio": 1
+        }
+      }
+    },
+    {
+      "name": "hud-early",
+      "data": {
+        "title": "Class Memories",
+        "level": "Cloudburst 8",
+        "score": "0000000",
+        "accuracy": "100%",
+        "combo": 0,
+        "allPerfect": null,
+        "seconds": 0,
+        "firstCompletion": 1.6551724137931034,
+        "lastCompletion": 145.55172413793105,
+        "pause": {
+          "x": 82.9,
+          "y": 58.9024,
+          "radius": 22.435999999999996,
+          "barWidth": 7,
+          "barHeight": 19.592,
+          "gap": 7.0152
+        },
+        "scorePosition": {
+          "x": 956.1028,
+          "y": 35.076
+        },
+        "referenceHeight": 632,
+        "ringPixel": [
+          149,
+          148,
+          147,
+          255
+        ],
+        "holePixel": [
+          19,
+          17,
+          16,
+          255
+        ],
+        "ringLum": 444,
+        "holeLum": 52,
+        "canvas": {
+          "width": 1019,
+          "height": 632,
+          "ratio": 1
+        }
+      }
+    }
+  ],
+  "exceptions": [],
+  "result": {
+    "version": "0.7.6",
+    "title": "Class Memories",
+    "level": "Cloudburst 8",
+    "score": "0208138",
+    "accuracy": "100%",
+    "combo": 133,
+    "allPerfect": "All Perfect",
+    "hudSeconds": 30,
+    "referenceHeight": 632,
+    "titleOk": true,
+    "levelOk": true,
+    "scoreOk": true,
+    "accuracyOk": true,
+    "comboOk": true,
+    "allPerfectOk": true,
+    "earlyComboZero": true,
+    "earlyNoAllPerfect": true,
+    "pauseRingLighterThanHoles": true,
+    "exceptions": 0,
+    "pauseRatio": 0.071,
+    "pauseRatioOk": true,
+    "ok": true
+  }
+}

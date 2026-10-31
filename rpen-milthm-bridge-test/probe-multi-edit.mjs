@@ -51,9 +51,9 @@ const READ_CHECKBOXES = `(() => {
 const BASE_LABELS = ['X 坐标', 'Y 坐标', '旋转', '线体不透明度（LineBodyTransparency 8）', '流速倍率'];
 const REMAPPED_LABELS = ['X 坐标', 'Y 坐标', '旋转', '轨道整体不透明度（线头+线身，Transparency 2）', '流速倍率'];
 const HEADER_LABELS = ['X 坐标', 'Y 坐标', '旋转', '轨道整体不透明度', '流速倍率'];
-const CHECKBOX_LABELS = ['X 坐标', 'Y 坐标', '旋转', '轨道整体不透明度', '流速倍率', '轨道大小·X', '轨道大小·Y', '轨道颜色', '轨道文字'];
-const CHECKED_COLUMNS = ['moveXEvents', 'rotateEvents', 'alphaEvents', 'speedEvents', 'colorEvents', 'textEvents'];
-const CHECKED_LABELS = ['X 坐标', '旋转', '轨道整体不透明度', '流速倍率', '轨道颜色', '轨道文字'];
+const CHECKBOX_LABELS = ['X 坐标', 'Y 坐标', '旋转', '轨道整体不透明度', '流速倍率'];
+const CHECKED_COLUMNS = ['moveXEvents', 'rotateEvents', 'alphaEvents', 'speedEvents'];
+const CHECKED_LABELS = ['X 坐标', '旋转', '轨道整体不透明度', '流速倍率'];
 const EXPECTED = ['全部', ...BASE_LABELS, '轨道大小·X（Size 3）', '轨道大小·Y（Size 3）', '轨道颜色（Color 22）', '轨道文字（文本事件）'];
 const hasPaint = options => options.some(option => option.value === 'paintEvents');
 const labelsOf = options => options.map(option => option.label);
@@ -141,7 +141,7 @@ try {
   const checkboxes = await evaluate(READ_CHECKBOXES);
   step('edit-columns-list', checkboxes);
 
-  // select a subset incl. extended kinds: X/旋转/整体不透明度/流速/颜色/文字 (drop Y)
+  // select a base subset: X/旋转/整体不透明度/流速 (drop Y)
   step('check-columns', await evaluate(`(() => {
     const list = document.querySelector('#multi-line-editor [data-milthm-multiline-columns] .milthm-edit-columns-list');
     const wanted = new Set(${JSON.stringify(CHECKED_COLUMNS)});
@@ -150,7 +150,7 @@ try {
     const editor = window.rpenMods.editor;
     return { checked: [...list.querySelectorAll('input:checked')].map(input => input.value) };
   })()`));
-  await waitFor(`(() => { const timeline = window.rpenMods.editor.timeline; const types = timeline?.eventTypes ?? []; return types.length === 6 && types.includes('colorEvents') ? true : null; })()`, 8000, 'selected columns become timeline columns');
+  await waitFor(`(() => { const timeline = window.rpenMods.editor.timeline; const types = timeline?.eventTypes ?? []; return types.length === 4 && types.includes('speedEvents') ? true : null; })()`, 8000, 'selected columns become timeline columns');
   await sleep(700);
   const selectedColumns = await readTimeline();
   step('timeline-selected-columns', selectedColumns);
@@ -185,6 +185,20 @@ try {
   })()`));
   await sleep(700);
 
+  // RPEN's special event layer must stay native: switching the timeline to 特殊 shows its own
+  // five columns (缩放X/缩放Y/颜色/着色器/文字) and our selection must not interfere.
+  step('special-layer-native', await evaluate(`(async () => {
+    const editor = window.rpenMods.editor;
+    editor.timeline.extended = true;
+    editor.invalidate?.();
+    await new Promise(resolve => setTimeout(resolve, 900));
+    const nativeTypes = [...(editor.timeline.eventTypes ?? [])];
+    editor.timeline.extended = false;
+    editor.invalidate?.();
+    await new Promise(resolve => setTimeout(resolve, 900));
+    return { extendedTypes: nativeTypes, restoredTypes: [...(editor.timeline.eventTypes ?? [])] };
+  })()`));
+
   const result = {
     version: report.steps.find(entry => entry.name === 'mod')?.data?.version,
     defaultLabels: labelsOf(initial?.options ?? []),
@@ -202,6 +216,7 @@ try {
     selectedColumnsOk: JSON.stringify(selectedColumns.eventTypes) === JSON.stringify(CHECKED_COLUMNS),
     selectedHeaderOk: JSON.stringify(selectedColumns.header) === JSON.stringify(CHECKED_LABELS),
     hiddenLocked: Boolean(report.steps.find(entry => entry.name === 'restriction-blocks-hidden')?.data?.yRemoved),
+    specialLayer: report.steps.find(entry => entry.name === 'special-layer-native')?.data ?? null,
     visibleSelection: report.steps.find(entry => entry.name === 'select-visible')?.data ?? null,
     exceptions: exceptions.length,
   };
@@ -210,7 +225,10 @@ try {
   result.ok = Boolean(result.version) && result.defaultMatches && result.paintHiddenInitially && result.remappedLabelOk
     && result.paintHiddenAfterRemap && result.singleHeaderOk && result.checkboxLabelsOk && result.defaultColumnsOk
     && result.defaultHeaderOk && result.selectedColumnsOk && result.selectedHeaderOk && result.hiddenLocked
-    && result.visibleSelectionOk && result.exceptions === 0;
+    && result.visibleSelectionOk
+    && JSON.stringify(result.specialLayer?.extendedTypes ?? []) === JSON.stringify(['scaleXEvents', 'scaleYEvents', 'colorEvents', 'paintEvents', 'textEvents'])
+    && JSON.stringify(result.specialLayer?.restoredTypes ?? []) === JSON.stringify(["moveXEvents","rotateEvents","alphaEvents","speedEvents"])
+    && result.exceptions === 0;
 
   await evaluate(`(() => { try { window.rpenMods.editor.activatePane('multi-line'); } catch (error) { /* ignore */ } return true; })()`);
   await sleep(700);

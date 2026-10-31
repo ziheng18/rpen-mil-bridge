@@ -4,7 +4,7 @@
       "name": "mod",
       "data": {
         "loaded": "loaded",
-        "version": "0.7.5"
+        "version": "0.7.6"
       }
     },
     {
@@ -78,7 +78,7 @@
   ],
   "exceptions": [],
   "result": {
-    "version": "0.7.5",
+    "version": "0.7.6",
     "zeroDurationOpacityHooked": true,
     "controlZeroDurationHooked": true,
     "hookOnPersisted": true,

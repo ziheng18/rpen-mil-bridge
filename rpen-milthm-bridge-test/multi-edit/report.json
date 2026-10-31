@@ -4,7 +4,7 @@
       "name": "mod",
       "data": {
         "loaded": "loaded",
-        "version": "0.7.5"
+        "version": "0.7.6"
       }
     },
     {
@@ -207,26 +207,6 @@
           "value": "speedEvents",
           "label": "流速倍率",
           "checked": true
-        },
-        {
-          "value": "scaleXEvents",
-          "label": "轨道大小·X",
-          "checked": false
-        },
-        {
-          "value": "scaleYEvents",
-          "label": "轨道大小·Y",
-          "checked": false
-        },
-        {
-          "value": "colorEvents",
-          "label": "轨道颜色",
-          "checked": false
-        },
-        {
-          "value": "textEvents",
-          "label": "轨道文字",
-          "checked": false
         }
       ]
     },
@@ -237,9 +217,7 @@
           "moveXEvents",
           "rotateEvents",
           "alphaEvents",
-          "speedEvents",
-          "colorEvents",
-          "textEvents"
+          "speedEvents"
         ]
       }
     },
@@ -250,17 +228,13 @@
           "moveXEvents",
           "rotateEvents",
           "alphaEvents",
-          "speedEvents",
-          "colorEvents",
-          "textEvents"
+          "speedEvents"
         ],
         "header": [
           "X 坐标",
           "旋转",
           "轨道整体不透明度",
-          "流速倍率",
-          "轨道颜色",
-          "轨道文字"
+          "流速倍率"
         ]
       }
     },
@@ -277,12 +251,30 @@
         "line1": 14,
         "line2": 13
       }
+    },
+    {
+      "name": "special-layer-native",
+      "data": {
+        "extendedTypes": [
+          "scaleXEvents",
+          "scaleYEvents",
+          "colorEvents",
+          "paintEvents",
+          "textEvents"
+        ],
+        "restoredTypes": [
+          "moveXEvents",
+          "rotateEvents",
+          "alphaEvents",
+          "speedEvents"
+        ]
+      }
     }
   ],
   "exceptions": [],
   "console": [],
   "result": {
-    "version": "0.7.5",
+    "version": "0.7.6",
     "defaultLabels": [
       "全部",
       "X 坐标",
@@ -325,26 +317,6 @@
         "value": "speedEvents",
         "label": "流速倍率",
         "checked": true
-      },
-      {
-        "value": "scaleXEvents",
-        "label": "轨道大小·X",
-        "checked": false
-      },
-      {
-        "value": "scaleYEvents",
-        "label": "轨道大小·Y",
-        "checked": false
-      },
-      {
-        "value": "colorEvents",
-        "label": "轨道颜色",
-        "checked": false
-      },
-      {
-        "value": "textEvents",
-        "label": "轨道文字",
-        "checked": false
       }
     ],
     "checkboxLabelsOk": true,
@@ -354,21 +326,32 @@
       "moveXEvents",
       "rotateEvents",
       "alphaEvents",
-      "speedEvents",
-      "colorEvents",
-      "textEvents"
+      "speedEvents"
     ],
     "selectedHeader": [
       "X 坐标",
       "旋转",
       "轨道整体不透明度",
-      "流速倍率",
-      "轨道颜色",
-      "轨道文字"
+      "流速倍率"
     ],
     "selectedColumnsOk": true,
     "selectedHeaderOk": true,
     "hiddenLocked": true,
+    "specialLayer": {
+      "extendedTypes": [
+        "scaleXEvents",
+        "scaleYEvents",
+        "colorEvents",
+        "paintEvents",
+        "textEvents"
+      ],
+      "restoredTypes": [
+        "moveXEvents",
+        "rotateEvents",
+        "alphaEvents",
+        "speedEvents"
+      ]
+    },
     "visibleSelection": {
       "line0": 15,
       "line1": 14,
