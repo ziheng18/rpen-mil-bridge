@@ -4,7 +4,7 @@
       "name": "mod",
       "data": {
         "loaded": "loaded",
-        "version": "0.7.3"
+        "version": "0.7.4"
       }
     },
     {
@@ -177,11 +177,7 @@
           "旋转",
           "轨道整体不透明度",
           "流速倍率"
-        ],
-        "panels": {
-          "count": 3,
-          "width": 946
-        }
+        ]
       }
     },
     {
@@ -215,27 +211,38 @@
       ]
     },
     {
+      "name": "no-restriction-allows-rotate",
+      "data": {
+        "kept": true
+      }
+    },
+    {
       "name": "check-columns",
       "data": {
         "expected": {
           "0": 15,
-          "1": 13,
-          "2": 12
+          "1": 14,
+          "2": 13
         },
         "actual": {
           "0": 15,
-          "1": 13,
-          "2": 12
+          "1": 14,
+          "2": 13
         },
-        "filterValue": "all",
         "currentLineSelection": 15
+      }
+    },
+    {
+      "name": "restriction-blocks-rotate",
+      "data": {
+        "rotateRemoved": true
       }
     }
   ],
   "exceptions": [],
   "console": [],
   "result": {
-    "version": "0.7.3",
+    "version": "0.7.4",
     "defaultLabels": [
       "全部",
       "X 坐标",
@@ -276,20 +283,21 @@
       "流速倍率"
     ],
     "checkboxLabelsOk": true,
+    "noRestrictionAllowsRotate": true,
     "checkboxSelection": {
       "expected": {
         "0": 15,
-        "1": 13,
-        "2": 12
+        "1": 14,
+        "2": 13
       },
       "actual": {
         "0": 15,
-        "1": 13,
-        "2": 12
+        "1": 14,
+        "2": 13
       },
-      "filterValue": "all",
       "currentLineSelection": 15
     },
+    "restrictionRemovesRotate": true,
     "exceptions": 0,
     "checkboxSelectionOk": true,
     "ok": true

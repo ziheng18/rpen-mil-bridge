@@ -6,14 +6,14 @@
     "zh-CN": "Milthm 自制谱桥接",
     "en-US": "Milthm fmt=2 Bridge"
   },
-  "version": "0.7.3",
+  "version": "0.7.4",
   "author": {
     "zh-CN": "可行性验证原型",
     "en-US": "Feasibility prototype"
   },
   "description": {
-    "zh-CN": "在 RPEN 中导入/编辑/导出 Milthm 自制谱（fmt=2），轨道式。v0.7.3：不透明度初始化统一为 255（全不透明）；时间轴顶部表头按 Milthm 事件列显示语义名（多线编辑时也是）；多线编辑面板新增「编辑事件列」勾选，控制左侧参与编辑的事件。v0.7.2：适配多线编辑的事件类型下拉。v0.7.1：RPEN 全部文字换成随包 ChillRoundF（OFL-1.1）。v0.7.0：特殊事件（线文本/判定线贴图）导出时转 Milthm 故事板。",
-    "en-US": "Import/edit/export Milthm fan charts (fmt=2) in RPEN. Track-based: each judge line = one Milthm track. v0.7.3: all initialised opacities are fully opaque 255; the timeline header shows the semantic column names (also while multi-line editing); the multi-line edit panel gains an \"edit event columns\" checkbox group controlling which events on the left are edited. v0.7.2: multi-line edit event-type dropdown follows the column mapping. v0.7.1: all RPEN text uses the bundled ChillRoundF font (SIL OFL-1.1). v0.7.0: converts RPEN special events (line text / line textures) into Milthm storyboards on export."
+    "zh-CN": "在 RPEN 中导入/编辑/导出 Milthm 自制谱（fmt=2），轨道式。v0.7.4：「编辑事件列」勾选移到右侧多线编辑面板（勾选后只编辑这些列，全不勾=不限制）；导入谱的 2/8/9 不透明度列补 0 拍初始化（有事件=其后第一个事件的起始值、最多一拍；无事件=0）。v0.7.3：新建/新增线不透明度初始化 255；时间轴表头语义列名。v0.7.2：多线编辑事件类型下拉按列映射。v0.7.1：全部文字换随包 ChillRoundF（OFL-1.1）。",
+    "en-US": "Import/edit/export Milthm fan charts (fmt=2) in RPEN. Track-based: each judge line = one Milthm track. v0.7.4: the \"edit event columns\" checkboxes moved into the right 多线编辑 panel (checked columns only are editable; none checked = no restriction); imported charts get beat-0 transparency initialisers (value = first following event start, at most one beat long; opacity 0 when the column is empty). v0.7.3: new/added lines initialise opacity to 255; semantic timeline headers. v0.7.2: multi-line edit event-type dropdown follows the column mapping. v0.7.1: all RPEN text uses the bundled ChillRoundF font (SIL OFL-1.1)."
   },
   "entry": "main.mjs",
   "settings": {

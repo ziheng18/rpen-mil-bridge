@@ -119,12 +119,49 @@ function semanticDiff(exported, label) {
   const totals = { x: 0, y: 0, rotate: 0, flow: 0, lineAlpha: 0, body: 0, size: 0 };
   for (const line of lines) {
     const semantics = semanticEvents(line);
-    totals.x += semantics.x.length; totals.y += semantics.y.length; totals.rotate += semantics.rotate.length;
-    totals.flow += semantics.flowSpeed.length; totals.lineAlpha += semantics.lineAlpha.length;
-    totals.body += semantics.bodyAlpha.length; totals.size += semantics.size.length;
+    const real = events => (events ?? []).filter(event => !event.syntheticInit);
+    totals.x += real(semantics.x).length; totals.y += real(semantics.y).length; totals.rotate += real(semantics.rotate).length;
+    totals.flow += real(semantics.flowSpeed).length; totals.lineAlpha += real(semantics.lineAlpha).length;
+    totals.body += real(semantics.bodyAlpha).length; totals.size += real(semantics.size).length;
   }
   console.log('semantic totals:', JSON.stringify(totals));
   if (totals.lineAlpha !== 343) failures.push('lineAlpha count ' + totals.lineAlpha + ' != 343');
+}
+
+// 4b) v0.7.4: imported transparency columns get a beat-0 initialiser
+//     - column has events -> init lasts at most 1 beat, value = first event's START value
+//     - column has no events -> 1-beat opacity-0 init
+{
+  const beatOf = time => Number(time[0]) + Number(time[1]) / Number(time[2]);
+  let checked = 0;
+  for (const line of synced.judgeLineList ?? []) {
+    const semantics = semanticEvents(line);
+    for (const key of ['lineAlpha', 'bodyAlpha', 'headAlpha']) {
+      const events = semantics[key] ?? [];
+      const real = events.filter(event => !event.syntheticInit);
+      const init = events.find(event => event.syntheticInit);
+      if (!real.length) {
+        if (!init || Number(init.start) !== 0 || beatOf(init.startTime) !== 0 || beatOf(init.endTime) !== 1) {
+          failures.push('init: empty ' + key + ' must get a 1-beat opacity-0 initialiser');
+        }
+      } else {
+        const first = real.reduce((left, right) => beatOf(left.startTime) <= beatOf(right.startTime) ? left : right);
+        const beat = beatOf(first.startTime);
+        if (beat > 0) {
+          if (!init) failures.push('init: ' + key + ' missing beat-0 initialiser');
+          else {
+            if (Number(init.start) !== Number(first.start)) failures.push('init: ' + key + ' init value ' + init.start + ' != first start ' + first.start);
+            if (beatOf(init.startTime) !== 0) failures.push('init: ' + key + ' must start at beat 0');
+            if (Math.abs(beatOf(init.endTime) - Math.min(1, beat)) > 1e-9) failures.push('init: ' + key + ' init length must be min(1, ' + beat + ') beats');
+            checked += 1;
+          }
+        } else if (init && beatOf(init.startTime) === 0 && init.syntheticInit) {
+          failures.push('init: ' + key + ' must not add an initialiser when the first event already starts at beat 0');
+        }
+      }
+    }
+  }
+  console.log('transparency initialisers checked:', checked);
 }
 
 // 5) a plain RPE line added to a Milthm chart (新增判定线/批量增加) must be initialised

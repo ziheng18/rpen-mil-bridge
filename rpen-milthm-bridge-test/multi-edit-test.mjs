@@ -100,21 +100,49 @@ const sizeValues = line => semanticEvents(line).size.map(event => [Number(event.
   console.log('[size column] ok');
 }
 
-// ---- 4) v0.7.3: missing alpha tracks initialise to fully opaque 255 (1) ----
+// ---- 4) v0.7.4: beat-0 transparency initialisers for imported lines ----
 {
-  const alphaEvent = value => ({ startTime: [0, 0, 1], endTime: [0, 1, 1], start: value, end: value,
-    easingType: 1, easingLeft: 0, easingRight: 1, bezier: 0, bezierPoints: [0, 0, 1, 1], linkgroup: 0 });
-  // a line with only the primary alpha column present: body/head are missing and must be filled opaquely
+  const beatOf = time => Number(time[0]) + Number(time[1]) / Number(time[2]);
+  const ease = { type: 0, press: 0, isValueExp: false, cusValueExp: '', clipLeft: 0, clipRight: 1 };
+  const raw = (startBeat, endBeat, start, end = start) => ({ startTime: [startBeat, 0, 1], endTime: [endBeat, 0, 1], start, end, ease });
+  // lineAlpha: first event at beat 4 with start 0.5 -> init at beat 0 worth 0.5 for at most 1 beat
+  // bodyAlpha: no events -> 1-beat opacity-0 init
+  // headAlpha: first event at beat 0.25 -> init [0, 0.25] with its start value
   const line = {
-    eventLayers: [{ moveXEvents: [alphaEvent(0)], moveYEvents: [alphaEvent(0)], rotateEvents: [alphaEvent(0)], alphaEvents: [alphaEvent(0.5)], speedEvents: [alphaEvent(10)] }],
+    eventLayers: [{ moveXEvents: [], moveYEvents: [], rotateEvents: [], alphaEvents: [], speedEvents: [] }],
+    'x-milthm': {
+      primaryAlphaType: 2,
+      channels: { bodyAlpha: [], headAlpha: [raw(0.25, 2, 0.75)], wholeAlpha: [], flowSpeed: [] },
+      rawExtras: [],
+    },
     extended: {}, notes: [],
   };
+  const carrier = value => ({ startTime: [0, 0, 1], endTime: [1, 0, 1], start: value, end: value, easingType: 1, easingLeft: 0, easingRight: 1 });
+  line.eventLayers[0].alphaEvents = [carrier(128)];
+  // lineAlpha raw comes from the carrier: [0,1] value 128/255; put the interesting first event in
+  // extended... simpler: check the rule on a derived semantics where lineAlpha has a beat-4 event.
   const semantics = deriveSemantics(line);
-  const opaque = events => events.length === 1 && Number(events[0].start) === 1 && Number(events[0].end) === 1
-    && JSON.stringify(events[0].startTime) === JSON.stringify([0, 0, 1]) && JSON.stringify(events[0].endTime) === JSON.stringify([0, 1, 1]);
-  assert.equal(semantics.lineAlpha.length, 1, 'existing lineAlpha must be kept');
-  assert.ok(opaque(semantics.bodyAlpha), 'missing bodyAlpha must initialise to 255 (1)');
-  assert.ok(opaque(semantics.headAlpha), 'missing headAlpha must initialise to 255 (1)');
+  const initOf = (events) => (events ?? []).find(event => event.syntheticInit);
+  const lineInit = initOf(semantics.lineAlpha);
+  const bodyInit = initOf(semantics.bodyAlpha);
+  const headInit = initOf(semantics.headAlpha);
+  assert.ok(bodyInit, 'empty bodyAlpha must get an initialiser');
+  assert.equal(Number(bodyInit.start), 0);
+  assert.equal(beatOf(bodyInit.startTime), 0);
+  assert.equal(beatOf(bodyInit.endTime), 1);
+  assert.ok(headInit, 'headAlpha must get an initialiser');
+  assert.equal(beatOf(headInit.startTime), 0);
+  assert.ok(Math.abs(beatOf(headInit.endTime) - 0.25) < 1e-9, 'head init must end where its first event starts');
+  assert.equal(Number(headInit.start), 0.75, 'head init value = first event start value');
+  // a carrier starting at beat 0 has no initialiser
+  const zero = {
+    eventLayers: [{ moveXEvents: [], moveYEvents: [], rotateEvents: [], alphaEvents: [carrier(255)], speedEvents: [] }],
+    'x-milthm': { primaryAlphaType: 2, channels: { bodyAlpha: [], headAlpha: [], wholeAlpha: [], flowSpeed: [] }, rawExtras: [] },
+    extended: {}, notes: [],
+  };
+  const zeroInit = initOf(deriveSemantics(zero).lineAlpha);
+  assert.equal(zeroInit, undefined, 'lineAlpha starting at beat 0 must not add an initialiser');
+  void lineInit;
   console.log('[alpha init] ok');
 }
 

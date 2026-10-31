@@ -174,29 +174,34 @@ function makeSyntheticAlphaInit(type, startTime = [0, 0, 1], endTime = [0, 1, 1]
   return { type, startTime: clone(startTime), endTime: clone(endTime), start: value, end: value, ease, syntheticInit: true };
 }
 
-// Missing line-transparency tracks are initialised with a single 1-beat fully opaque (255)
-// event starting at beat 0. v0.7.3 changed this from 0 (transparent) to 255 per user request,
-// so every line and every initialised alpha channel starts fully opaque:
-//  - lineAlpha missing, body/head present  -> initialise lineAlpha;
-//  - lineAlpha present, body AND head both missing -> initialise body and head;
-//  - body/head are peers: never auto-fill one from the other.
-// WholeTransparency(13) affects notes and is left alone.
+// Imported charts: every line-transparency column (整体 Transparency 2 / 线身 LineBody 8 / 线头
+// LineHead 9) gets a beat-0 initialiser (v0.7.4):
+//  - column has events: the initialiser lasts at most 1 beat and its value equals the START value
+//    of the column's first event, so the value before that event already matches it (no pop);
+//  - column has no events: the initialiser is a 1-beat opacity-0 event.
+// These are synthetic (filtered from export). Newly created/added lines use stashForPlainLine()
+// instead, which initialises all three channels to 255 (fully opaque). WholeTransparency(13) is
+// left alone because it affects notes.
+function alphaInitializer(events, type) {
+  const real = (events ?? []).filter(event => !event?.syntheticInit);
+  if (!real.length) return [makeSyntheticAlphaInit(type, [0, 0, 1], [1, 0, 1], 0)];
+  let first = real[0];
+  for (const event of real) if (eventBeat(event.startTime) < eventBeat(first.startTime)) first = event;
+  const beat = eventBeat(first.startTime);
+  if (!(beat > 0)) return [];
+  const endTime = beat >= 1 ? [1, 0, 1] : clone(first.startTime);
+  return [makeSyntheticAlphaInit(type, [0, 0, 1], endTime, Number(first.start))];
+}
+
 function addTransparencyInitializers(semantics) {
-  const has = key => (semantics[key] ?? []).length > 0;
-  const lineAlpha = has('lineAlpha');
-  const bodyAlpha = has('bodyAlpha');
-  const headAlpha = has('headAlpha');
-  if (!lineAlpha && !bodyAlpha && !headAlpha) return;
-  const targets = [];
-  if (!lineAlpha && (bodyAlpha || headAlpha)) targets.push({ key: 'lineAlpha', type: MIL_ANIM.TRANSPARENCY });
-  if (lineAlpha && !bodyAlpha && !headAlpha) {
-    targets.push({ key: 'bodyAlpha', type: MIL_ANIM.LINE_BODY_TRANSPARENCY });
-    targets.push({ key: 'headAlpha', type: MIL_ANIM.LINE_HEAD_TRANSPARENCY });
-  }
-  if (!targets.length) return;
-  for (const target of targets) {
-    if ((semantics[target.key] ?? []).length) continue;
-    semantics[target.key] = [makeSyntheticAlphaInit(target.type, [0, 0, 1], [0, 1, 1], 1)];
+  for (const [key, type] of [
+    ['lineAlpha', MIL_ANIM.TRANSPARENCY],
+    ['bodyAlpha', MIL_ANIM.LINE_BODY_TRANSPARENCY],
+    ['headAlpha', MIL_ANIM.LINE_HEAD_TRANSPARENCY],
+  ]) {
+    const init = alphaInitializer(semantics[key], type);
+    if (!init.length) continue;
+    semantics[key] = [...init, ...(semantics[key] ?? [])];
   }
 }
 
