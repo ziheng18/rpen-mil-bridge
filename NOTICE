@@ -1,0 +1,10 @@
+Required Notice: Copyright 2026 ziheng.
+Required Notice: rpen-milthm-bridge is a third-party mod for Re:PhiEdit Next (RPEN); no RPEN source code is bundled.
+
+作者：ziheng。
+本项目是 Re:PhiEdit Next（RPEN，PolyForm Noncommercial License 1.0.0）的第三方模组，不包含 RPEN 源码；
+兼容性依赖 RPEN 的模块接口。渲染语义公式参考 RainPlayerUnity（MIT，qaqFei）与 Rain Editor 的实现，
+仅作为研究依据，本仓库不分发其源码、截图或研究文档。
+随包分发的字体 ChillRoundF / 寒蝉全圆体 采用 SIL Open Font License 1.1，
+许可证与版权声明见 rpen-milthm-bridge/fonts/OFL.txt 与 rpen-milthm-bridge/fonts/FONT-NOTICE.txt。
+本项目采用 PolyForm Noncommercial License 1.0.0，商业用途需另行取得授权。
