@@ -488,11 +488,11 @@ export async function activate(api) {
     context.fillRect(left, atY(0.004), width * progress, Math.max(2, size(0.009)));
     // pause: translucent white circle with two vertical bars knocked out
     const centerX = atX(0.050);
-    const centerY = atY(0.0932);
-    const radius = size(0.0355);
-    const barWidth = size(0.0078);
-    const barHeight = size(0.031);
-    const gap = size(0.0111);
+    const centerY = atY(0.082);
+    const radius = size(0.0405);
+    const barWidth = size(0.0062);
+    const barHeight = size(0.026);
+    const gap = size(0.007);
     context.globalAlpha = 0.55;
     context.fillStyle = '#ffffff';
     context.beginPath();
@@ -513,11 +513,11 @@ export async function activate(api) {
     context.globalAlpha = 0.92;
     context.fillStyle = '#ffffff';
     context.font = font(0.0377);
-    context.fillText(title, textLeft, atY(0.0888), textMaxWidth);
+    context.fillText(title, textLeft, atY(0.0776), textMaxWidth);
     if (level) {
       context.globalAlpha = 0.55;
       context.font = font(0.0266);
-      context.fillText(level, textLeft, atY(0.1243), textMaxWidth);
+      context.fillText(level, textLeft, atY(0.1131), textMaxWidth);
     }
     // score in the top-right corner, faint 100% below it
     const scoreRight = atX(0.9711);
@@ -529,22 +529,22 @@ export async function activate(api) {
     context.fillText(scoreText, scoreRight, atY(0.0555));
     context.globalAlpha = 0.55;
     context.font = font(0.0266);
-    context.fillText('100%', scoreRight, atY(0.1075));
+    context.fillText('100.00%', scoreRight, atY(0.1075));
     // "All Perfect" above the centred combo number
     if (combo >= 3) {
       context.textAlign = 'center';
       context.textBaseline = 'middle';
       context.fillStyle = '#ffffff';
       context.globalAlpha = 0.9;
-      context.font = font(0.0289);
+      context.font = font(0.034);
       context.fillText('All Perfect', atX(0.5), atY(0.070));
       context.globalAlpha = 1;
-      context.font = font(0.0488);
+      context.font = font(0.042);
       context.fillText(String(combo), atX(0.5), atY(0.122));
     }
     context.restore();
     preview.__milthmHud = {
-      title, level, score: scoreText, accuracy: '100%', combo,
+      title, level, score: scoreText, accuracy: '100.00%', combo,
       allPerfect: combo >= 3 ? 'All Perfect' : null,
       seconds,
       firstCompletion: times[0] ?? null,

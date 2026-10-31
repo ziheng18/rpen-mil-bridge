@@ -112,7 +112,7 @@ try {
     titleOk: Boolean(late?.title && late.title.length > 0),
     levelOk: Boolean(late?.level && late.level.length > 0),
     scoreOk: /^\d{7}$/.test(String(late?.score ?? '')) && Number(late?.score) > 0,
-    accuracyOk: late?.accuracy === '100%',
+    accuracyOk: late?.accuracy === '100.00%',
     comboOk: Number(late?.combo ?? 0) >= 3,
     allPerfectOk: late?.allPerfect === 'All Perfect',
     earlyComboZero: Number(early?.combo ?? -1) === 0,
@@ -122,7 +122,7 @@ try {
   };
   // reference proportions: pause diameter ≈ 7.1% of the preview height, combo ≈ 4.9% font
   result.pauseRatio = height ? Number(((late?.pause?.radius * 2) / height).toFixed(4)) : null;
-  result.pauseRatioOk = Math.abs(Number(result.pauseRatio ?? 0) - 0.071) <= 0.012;
+  result.pauseRatioOk = Math.abs(Number(result.pauseRatio ?? 0) - 0.081) <= 0.012;
   result.ok = result.titleOk && result.levelOk && result.scoreOk && result.accuracyOk && result.comboOk
     && result.allPerfectOk && result.earlyComboZero && result.earlyNoAllPerfect
     && result.pauseRingLighterThanHoles && result.pauseRatioOk && result.exceptions === 0;

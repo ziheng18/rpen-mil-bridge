@@ -6,14 +6,14 @@
     "zh-CN": "Milthm 自制谱桥接",
     "en-US": "Milthm fmt=2 Bridge"
   },
-  "version": "0.7.6",
+  "version": "0.7.7",
   "author": {
     "zh-CN": "可行性验证原型",
     "en-US": "Feasibility prototype"
   },
   "description": {
-    "zh-CN": "在 RPEN 中导入/编辑/导出 Milthm 自制谱（fmt=2），轨道式。v0.7.6：「编辑事件列」只列 RPEN 基础事件（X/Y/旋转/不透明度/速度），特殊事件层（大小/颜色/着色器/文字）保持 RPEN 原生编辑；预览框 UI 改为 Milthm 布局（半透明白色暂停圆挖出两个竖杠、右侧曲名+难度、右上分数+100%、中央 All Perfect + 连击数）。v0.7.5：导入谱不透明度对齐 Rain Editor。v0.7.3：新建/新增线不透明度 255。v0.7.1：全部文字换随包 ChillRoundF（OFL-1.1）。",
-    "en-US": "Import/edit/export Milthm fan charts (fmt=2) in RPEN. Track-based: each judge line = one Milthm track. v0.7.6: the \"edit event columns\" group only lists the base RPEN event kinds (X/Y/rotation/opacity/speed); the RPEN special event layer (size/colour/shader/text) stays native. The preview HUD now follows Milthm's layout (semi-transparent white pause circle with two knocked-out bars, song title + difficulty to its right, score + faint \"100%\" top-right, \"All Perfect\" above the centred combo number). v0.7.5: imported-chart opacity follows Rain Editor. v0.7.3: new/added lines opacity 255. v0.7.1: all RPEN text uses the bundled ChillRoundF font (SIL OFL-1.1)."
+    "zh-CN": "在 RPEN 中导入/编辑/导出 Milthm 自制谱（fmt=2），轨道式。v0.7.7：预览 HUD 微调（暂停圆更大、竖杠更小更近、暂停/曲名/难度上移、All Perfect 更大、连击更小、\"100.00%\"）。v0.7.6：特殊事件层恢复 RPEN 原生、预览 HUD 按 Milthm 比例重排。v0.7.5：导入谱不透明度对齐 Rain Editor。v0.7.3：新建/新增线不透明度 255。v0.7.1：全部文字换随包 ChillRoundF（OFL-1.1）。",
+    "en-US": "Import/edit/export Milthm fan charts (fmt=2) in RPEN. Track-based: each judge line = one Milthm track. v0.7.7: preview HUD tweaks (bigger pause circle, smaller/closer bars, pause/title/difficulty moved up, bigger All Perfect, smaller combo number, \"100.00%\"). v0.7.6: native RPEN special event layer + Milthm-proportioned preview HUD. v0.7.5: imported-chart opacity follows Rain Editor. v0.7.3: new/added lines opacity 255. v0.7.1: all RPEN text uses the bundled ChillRoundF font (SIL OFL-1.1)."
   },
   "entry": "main.mjs",
   "settings": {

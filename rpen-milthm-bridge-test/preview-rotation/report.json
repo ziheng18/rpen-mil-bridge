@@ -4,7 +4,7 @@
       "name": "mod",
       "data": {
         "loaded": "loaded",
-        "version": "0.7.6"
+        "version": "0.7.7"
       }
     },
     {
@@ -40,7 +40,7 @@
   ],
   "exceptions": [],
   "result": {
-    "version": "0.7.6",
+    "version": "0.7.7",
     "storedRotations": [
       [
         30
