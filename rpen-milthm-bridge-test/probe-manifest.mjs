@@ -13,7 +13,8 @@ const PAGE = 'http://127.0.0.1:4173/';
 const WORK = 'E:\\File\\deepseek harness\\mil';
 const OUT = path.join(WORK, 'rpen-milthm-bridge-test', 'manifest');
 const MOD = path.join(WORK, 'rpen-milthm-bridge', 'milthm-fmt2-bridge.rpenmod');
-const EXPECTED_VERSION = '0.7.16';
+const EXPECTED_VERSION = '0.7.17';
+const EXPECTED_AUTHOR = 'ziheng';
 const MAX_ZH = 400;
 const MAX_EN = 900;
 fs.mkdirSync(OUT, { recursive: true });
@@ -62,6 +63,8 @@ try {
       loaded: manager.runtime.loaded.get('milthm-fmt2-bridge')?.status,
       nameZh: manifest.name?.['zh-CN'] ?? null,
       nameEn: manifest.name?.['en-US'] ?? null,
+      authorZh: manifest.author?.['zh-CN'] ?? null,
+      authorEn: manifest.author?.['en-US'] ?? null,
       settings: Object.keys(manifest.settings ?? {}).length,
       zhLength: description['zh-CN']?.length ?? null,
       enLength: description['en-US']?.length ?? null,
@@ -72,6 +75,7 @@ try {
   const result = {
     ...info,
     expectedVersion: EXPECTED_VERSION,
+    expectedAuthor: EXPECTED_AUTHOR,
     maxZh: MAX_ZH,
     maxEn: MAX_EN,
     exceptions: exceptions.length,
@@ -79,6 +83,7 @@ try {
   result.ok = info.version === EXPECTED_VERSION && info.loaded === 'loaded'
     && info.nameEn === 'Milthm fmt=2 Bridge' && info.settings === 14
     && info.zhLength > 0 && info.zhLength <= MAX_ZH && info.enLength > 0 && info.enLength <= MAX_EN
+    && info.authorZh === EXPECTED_AUTHOR && info.authorEn === EXPECTED_AUTHOR
     && info.mentionsVersions === false && exceptions.length === 0;
   fs.writeFileSync(path.join(OUT, 'report.json'), JSON.stringify({ result, info }, null, 2));
   console.log(JSON.stringify(result, null, 1));
@@ -92,3 +97,4 @@ try {
   process.exitCode = 1;
   try { ws.close(); } catch { }
 }
+
