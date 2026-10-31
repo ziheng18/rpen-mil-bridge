@@ -141,8 +141,9 @@ function semanticDiff(exported, label) {
       const real = events.filter(event => !event.syntheticInit);
       const init = events.find(event => event.syntheticInit);
       if (!real.length) {
-        if (!init || Number(init.start) !== 0 || beatOf(init.startTime) !== 0 || beatOf(init.endTime) !== 1) {
-          failures.push('init: empty ' + key + ' must get a 1-beat opacity-0 initialiser');
+        // Rain Editor resolves a missing transparency track to 1 (fully opaque)
+        if (!init || Number(init.start) !== 1 || beatOf(init.startTime) !== 0 || beatOf(init.endTime) !== 1) {
+          failures.push('init: empty ' + key + ' must get a 1-beat opaque (1) initialiser');
         }
       } else {
         const first = real.reduce((left, right) => beatOf(left.startTime) <= beatOf(right.startTime) ? left : right);

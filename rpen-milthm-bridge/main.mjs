@@ -1117,16 +1117,31 @@ export async function activate(api) {
 
   /* ---------------- Milthm 语义表头：时间轴顶部显示“该列编辑什么” ---------------- */
   // RPEN draws the native event names (X / Y / 旋转 / 不透明度 / 速度 / 缩放X / …) in the timeline
-  // header. On a Milthm chart each column is a mapped semantic channel, so after RPEN draws we
-  // repaint the 23px header strip with the semantic names (single-line and 多线编辑 panels).
-  // The interactive column dropdowns above only exist in single-line mode; multi-line mode shows
-  // several panels side by side, so repainting the canvas is the reliable way to relabel them.
-  const EXTENDED_HEADER_LABELS = ['轨道大小·X（Size 3）', '轨道大小·Y（Size 3）', '轨道颜色（Color 22）', '着色器', '轨道文字（文本事件）'];
-  const headerLabels = () => {
+  // header. On a Milthm chart each column maps to a semantic channel, so after RPEN draws we
+  // repaint the 23px header strip with semantic names (single-line and 多线编辑 panels).
+  const EXTENDED_TYPE_LABELS = {
+    scaleXEvents: '轨道大小·X', scaleYEvents: '轨道大小·Y',
+    colorEvents: '轨道颜色', paintEvents: '着色器', textEvents: '轨道文字',
+  };
+  const headerLabelMap = () => {
     const chart = editor.chart;
     if (!isMilthmChart(chart)) return null;
-    if (editor.timeline?.extended) return EXTENDED_HEADER_LABELS;
-    return chartColumns(chart).map(key => COLUMN_LABELS[key] ?? key);
+    const columns = chartColumns(chart);
+    const map = new Map([
+      ['moveXEvents', COLUMN_LABELS[columns[0]] ?? 'X 坐标'],
+      ['moveYEvents', COLUMN_LABELS[columns[1]] ?? 'Y 坐标'],
+      ['rotateEvents', COLUMN_LABELS[columns[2]] ?? '旋转'],
+      ['alphaEvents', COLUMN_LABELS[columns[3]] ?? '不透明度'],
+      ['speedEvents', COLUMN_LABELS[columns[4]] ?? '速度'],
+      ...Object.entries(EXTENDED_TYPE_LABELS),
+    ]);
+    return map;
+  };
+  const headerLabels = () => {
+    const map = headerLabelMap();
+    if (!map) return null;
+    const types = editor.timeline?.eventTypes ?? [];
+    return types.map(type => map.get(type) ?? type);
   };
   const paintHeaderLabels = (timeline, mode) => {
     const labels = headerLabels();
@@ -1190,19 +1205,16 @@ export async function activate(api) {
   };
   patchTimelineHeaders();
 
-  /* ---------------- 多线编辑：事件类型下拉 + 「编辑事件列」勾选（右侧多线编辑面板） ---------------- */
-  // RPEN's 多线编辑 panel lists native RPE event types (X / Y / 旋转 / 不透明度 / 速度 / 缩放X /
-  // 缩放Y / 着色器 / 颜色 / 文本). On a Milthm chart those native columns are the Milthm display
-  // slots, so the 事件类型 dropdown is relabelled with the semantic channel it currently edits
-  // (线体/线头/整体不透明度、流速倍率、轨道大小、颜色) and 着色器 is hidden.
-  //
-  // v0.7.4 moves the 「编辑事件列」 checkbox group into the 多线编辑 panel itself (the pane with
-  // 多线/音符/事件/合并 and the line list). Checking columns does two things:
-  //  1. it selects every event of those columns on the target lines (left timeline highlight);
-  //  2. while a subset is checked, editing selections in the timeline are limited to those
-  //     columns (events of unchecked columns are dropped from the selection on the next state
-  //     change), so the batch apply only touches the checked columns.
-  // No checkbox = no restriction.
+  /* ---------------- 多线编辑：事件类型下拉 + 「编辑事件列」勾选（所有事件种类） ---------------- */
+  // v0.7.5: the checkbox group lists ALL event kinds (X / Y / 旋转 / 不透明度 / 速度 / 缩放X /
+  // 缩放Y / 颜色 / 文字; 着色器 has no Milthm meaning and is omitted). Checked kinds are rendered
+  // as the event columns of the left multi-line timeline (each target line panel), in the order
+  // below. This is implemented by
+  //   - overriding timeline.eventTypes while multi-line events editing is active,
+  //   - merging the selected extended arrays (scaleX/scaleY/color/text) into the native event
+  //     layer for the draw call (restored right after), and
+  //   - repainting the header strip with the semantic labels (see the header block above).
+  // The 事件类型 dropdown of the batch-edit (多事件编辑) panel keeps the semantic labels too.
   const EDIT_COLUMNS_STYLE = `
 .milthm-edit-columns{display:flex;flex-direction:column;gap:5px;margin:2px 0 6px;padding:7px 8px;border:1px solid #3c434f;border-radius:3px;background:#282c34}
 .milthm-edit-columns-title{font-size:11px;color:#aab3c0}
@@ -1212,59 +1224,101 @@ export async function activate(api) {
 `;
   api.style(EDIT_COLUMNS_STYLE);
   const BASE_EVENT_TYPES = ['moveXEvents', 'moveYEvents', 'rotateEvents', 'alphaEvents', 'speedEvents'];
-  const EXTENDED_EVENT_TYPES = ['scaleXEvents', 'scaleYEvents', 'colorEvents', 'textEvents'];
-  let editColumnTypes = new Set();
+  const EXTRA_EVENT_TYPES = ['scaleXEvents', 'scaleYEvents', 'colorEvents', 'textEvents'];
+  const ALL_EVENT_TYPES = [...BASE_EVENT_TYPES, ...EXTRA_EVENT_TYPES];
+  let editColumnTypes = new Set(BASE_EVENT_TYPES);
   const multiEditTypeOptions = () => isMilthmChart(editor.chart)
     ? milthmEventTypeLabels(chartColumns(editor.chart))
     : (internals.multiEdit?.EVENT_BATCH_TYPES ?? null);
+  const columnOptionsCompact = () => {
+    if (!isMilthmChart(editor.chart)) return [];
+    const columns = chartColumns(editor.chart);
+    return [
+      ['moveXEvents', COLUMN_LABELS[columns[0]] ?? 'X 坐标'],
+      ['moveYEvents', COLUMN_LABELS[columns[1]] ?? 'Y 坐标'],
+      ['rotateEvents', COLUMN_LABELS[columns[2]] ?? '旋转'],
+      ['alphaEvents', COLUMN_LABELS[columns[3]] ?? '不透明度'],
+      ['speedEvents', COLUMN_LABELS[columns[4]] ?? '速度'],
+      ['scaleXEvents', '轨道大小·X'],
+      ['scaleYEvents', '轨道大小·Y'],
+      ['colorEvents', '轨道颜色'],
+      ['textEvents', '轨道文字'],
+    ];
+  };
+  const columnEventTypes = () => {
+    const chart = editor.chart;
+    if (!isMilthmChart(chart)) return null;
+    const session = editor.session;
+    if (!(session?.multiLineActive && session.multiLineMode === 'events')) return null;
+    if (!editColumnTypes.size) return null;
+    return ALL_EVENT_TYPES.filter(type => editColumnTypes.has(type));
+  };
   const lineEventList = (line, type) => {
     if (!line) return [];
-    if (EXTENDED_EVENT_TYPES.includes(type) || type === 'paintEvents') return line.extended?.[type] ?? [];
+    if (EXTRA_EVENT_TYPES.includes(type) || type === 'paintEvents') return line.extended?.[type] ?? [];
     return line.eventLayers?.[0]?.[type] ?? [];
   };
-  const columnTypeOptions = () => {
-    if (!isMilthmChart(editor.chart)) return [];
-    const lookup = new Map(milthmEventTypeLabels(chartColumns(editor.chart)));
-    const types = editor.timeline?.extended ? EXTENDED_EVENT_TYPES : BASE_EVENT_TYPES;
-    return types.map(type => [type, lookup.get(type) ?? type]);
+  // The selected columns become the timeline's eventTypes (only while multi-line events editing
+  // is active). The original getter is restored on unload.
+  const timeline = editor.timeline;
+  const timelinePrototype = timeline ? Object.getPrototypeOf(timeline) : null;
+  const originalEventTypes = timelinePrototype ? Object.getOwnPropertyDescriptor(timelinePrototype, 'eventTypes') : null;
+  if (timeline && originalEventTypes?.get) {
+    Object.defineProperty(timeline, 'eventTypes', {
+      configurable: true,
+      enumerable: false,
+      get() {
+        const types = columnEventTypes();
+        if (types?.length) return types;
+        return originalEventTypes.get.call(this);
+      },
+    });
+    api.dispose(() => { try { delete timeline.eventTypes; } catch { /* ignore */ } });
+  }
+  // Merge the selected extended arrays into the native layer for the duration of the draw call.
+  const patchMultiLineColumns = () => {
+    const target = editor.timeline;
+    if (!target) return;
+    api.patch(target, 'drawMultiLineEvents', previous => function (...args) {
+      const types = columnEventTypes();
+      const session = this.getSession?.() ?? editor.session;
+      const previousExtended = this.extended;
+      const restores = [];
+      if (types?.length && session?.chart) {
+        this.extended = false;
+        const layerIndex = this.layer ?? 0;
+        for (const lineIndex of session.targetLineIndices ?? []) {
+          const line = session.chart.judgeLineList?.[lineIndex];
+          const layer = line?.eventLayers?.[layerIndex];
+          if (!layer) continue;
+          const extended = line.extended ?? {};
+          const added = [];
+          for (const type of types) {
+            if (BASE_EVENT_TYPES.includes(type)) continue;
+            if (Object.hasOwn(layer, type)) continue;
+            layer[type] = extended[type] ?? [];
+            added.push(type);
+          }
+          if (added.length) restores.push({ layer, added });
+        }
+      }
+      try {
+        return previous.apply(this, args);
+      } finally {
+        this.extended = previousExtended;
+        for (const { layer, added } of restores) for (const type of added) delete layer[type];
+      }
+    });
   };
-  const applyEditColumnTypes = (types = []) => {
-    editColumnTypes = new Set(types);
-    const session = editor.session;
-    const chart = editor.chart;
-    if (!session || !isMilthmChart(chart)) return;
-    const multi = session.multiLineActive && session.multiLineMode === 'events';
-    const lines = multi ? session.targetLineIndices : [session.lineIndex];
-    const known = new Set([...BASE_EVENT_TYPES, ...EXTENDED_EVENT_TYPES, 'paintEvents']);
-    if (!session.multiEventSelection) session.multiEventSelection = new Map();
-    for (const lineIndex of lines) {
-      const line = chart.judgeLineList?.[lineIndex];
-      const previous = new Set((multi ? session.multiEventSelection.get(lineIndex) : session.eventSelection) ?? []);
-      const next = new Set([...previous].filter(key => !known.has(String(key).split(':')[0])));
-      for (const type of editColumnTypes) lineEventList(line, type).forEach((_event, index) => next.add(`${type}:${index}`));
-      if (multi) {
-        if (next.size) session.multiEventSelection.set(lineIndex, next);
-        else session.multiEventSelection.delete(lineIndex);
-      } else session.eventSelection = next;
-    }
-    if (multi) {
-      session.eventSelection = new Set(session.multiEventSelection.get(session.lineIndex) ?? []);
-      session.multiSelectionIntent = 'events';
-    }
-    session.focus = 'events';
-    session.selection.clear();
-    try { editor.invalidate?.(); } catch { /* ignore */ }
-  };
-  // While a subset of columns is checked, drop events of unchecked columns from the selection so
-  // they cannot be batch-edited from the left timeline.
+  patchMultiLineColumns();
+  // Drop events of columns that are not shown (they cannot be edited from the left timeline).
   const restrictEditableEvents = () => {
-    if (!editColumnTypes.size) return;
     const chart = editor.chart;
     const session = editor.session;
     if (!session || !isMilthmChart(chart)) return;
     if (!(session.multiLineActive && session.multiLineMode === 'events')) return;
-    const known = [...BASE_EVENT_TYPES, ...EXTENDED_EVENT_TYPES, 'paintEvents'];
-    const disabled = new Set(known.filter(type => !editColumnTypes.has(type)));
+    if (!editColumnTypes.size) return;
+    const disabled = new Set(ALL_EVENT_TYPES.filter(type => !editColumnTypes.has(type)));
     if (!disabled.size) return;
     let changed = false;
     for (const [lineIndex, keys] of [...(session.multiEventSelection ?? new Map())]) {
@@ -1278,16 +1332,24 @@ export async function activate(api) {
     if (current.size !== (session.eventSelection?.size ?? 0)) { session.eventSelection = current; changed = true; }
     if (changed) { try { editor.invalidate?.(); } catch { /* ignore */ } }
   };
+  const applyEditColumnTypes = (types = []) => {
+    const next = new Set(types);
+    editColumnTypes = next.size ? next : new Set(BASE_EVENT_TYPES);
+    restrictEditableEvents();
+    try { editor.invalidate?.(); } catch { /* ignore */ }
+  };
   const fillColumnCheckboxes = (list, types) => {
     const signature = types.map(([value, label]) => `${value}=${label}`).join('|');
-    if (list.dataset.milthmSignature === signature) return;
-    const checked = new Set([...editColumnTypes].filter(type => types.some(([value]) => value === type)));
+    if (list.dataset.milthmSignature === signature) {
+      list.querySelectorAll('input').forEach(input => { input.checked = editColumnTypes.has(input.value); });
+      return;
+    }
     list.replaceChildren(...types.map(([value, label]) => {
       const item = document.createElement('label');
       const input = document.createElement('input');
       input.type = 'checkbox';
       input.value = value;
-      input.checked = checked.has(value);
+      input.checked = editColumnTypes.has(value);
       const text = document.createElement('span');
       text.textContent = label;
       item.append(input, text);
@@ -1308,7 +1370,7 @@ export async function activate(api) {
       box.dataset.milthmMultilineColumns = '1';
       const title = document.createElement('div');
       title.className = 'milthm-edit-columns-title';
-      title.textContent = '编辑事件列（勾选后只编辑这些列；全部不勾 = 不限制）';
+      title.textContent = '编辑事件列（勾选的列显示在左侧；未勾选的列不可编辑）';
       const list = document.createElement('div');
       list.className = 'milthm-edit-columns-list';
       list.addEventListener('change', () => applyEditColumnTypes([...list.querySelectorAll('input:checked')].map(input => input.value)));
@@ -1320,7 +1382,7 @@ export async function activate(api) {
       else host.append(box);
     }
     const list = box.querySelector('.milthm-edit-columns-list');
-    if (list) fillColumnCheckboxes(list, columnTypeOptions());
+    if (list) fillColumnCheckboxes(list, columnOptionsCompact());
   };
   let multiLinePanelPatched = false;
   const patchMultiLinePanel = () => {

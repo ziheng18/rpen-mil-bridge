@@ -175,16 +175,18 @@ function makeSyntheticAlphaInit(type, startTime = [0, 0, 1], endTime = [0, 1, 1]
 }
 
 // Imported charts: every line-transparency column (整体 Transparency 2 / 线身 LineBody 8 / 线头
-// LineHead 9) gets a beat-0 initialiser (v0.7.4):
-//  - column has events: the initialiser lasts at most 1 beat and its value equals the START value
-//    of the column's first event, so the value before that event already matches it (no pop);
-//  - column has no events: the initialiser is a 1-beat opacity-0 event.
-// These are synthetic (filtered from export). Newly created/added lines use stashForPlainLine()
-// instead, which initialises all three channels to 255 (fully opaque). WholeTransparency(13) is
-// left alone because it affects notes.
+// LineHead 9) gets a beat-0 initialiser (v0.7.5, follows Rain Editor's sampling rules):
+//  - Rain Editor resolves a missing transparency track to its default 1 (fully opaque), so an
+//    empty column is initialised with a 1-beat value-1 event;
+//  - Rain Editor's before-first-event value is the first event's START value, so a column with
+//    events gets a beat-0 initialiser that lasts at most 1 beat and carries that start value
+//    (no initialiser when the first event already starts at beat 0).
+// These are synthetic (filtered from export, the original chart data is untouched). Newly
+// created/added lines use stashForPlainLine() instead (255 = fully opaque as well).
+// WholeTransparency(13) is left alone because it affects notes.
 function alphaInitializer(events, type) {
   const real = (events ?? []).filter(event => !event?.syntheticInit);
-  if (!real.length) return [makeSyntheticAlphaInit(type, [0, 0, 1], [1, 0, 1], 0)];
+  if (!real.length) return [makeSyntheticAlphaInit(type, [0, 0, 1], [1, 0, 1], 1)];
   let first = real[0];
   for (const event of real) if (eventBeat(event.startTime) < eventBeat(first.startTime)) first = event;
   const beat = eventBeat(first.startTime);

@@ -1,8 +1,9 @@
-// Live probe: 多线编辑 adaptations for Milthm charts (v0.7.2 → v0.7.4).
+// Live probe: 多线编辑 adaptations for Milthm charts (v0.7.2 → v0.7.5).
 // - event-type dropdown labels follow the current column mapping (着色器 hidden);
 // - the timeline header strip shows the semantic column names (single- and multi-line mode);
-// - the 多线编辑 pane gains an 「编辑事件列」 checkbox group that (a) selects the checked columns'
-//   events on the target lines and (b) locks editing to those columns while a subset is checked.
+// - the 多线编辑 pane's 「编辑事件列」 checkbox group lists ALL event kinds; the checked kinds are
+//   rendered as the event columns of the left multi-line timeline and unchecking a kind hides +
+//   locks it (its events cannot be selected/edited).
 // Requires RPEN on :4173 and headless Edge CDP on :9333.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -35,14 +36,14 @@ await send('Emulation.setDeviceMetricsOverride', { width: 1400, height: 900, dev
 const evaluate = async expression => { const r = await send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true }); if (r.exceptionDetails) throw new Error(r.exceptionDetails.exception?.description ?? r.exceptionDetails.text); return r.result?.value; };
 const waitFor = async (expression, timeout = 120000, label = 'wait') => { const s = Date.now(); while (Date.now() - s < timeout) { try { const value = await evaluate(expression); if (value) return value; } catch { } await sleep(300); } throw new Error('timeout: ' + label); };
 const report = { steps: [], exceptions, console: consoleMessages };
-const step = (name, data) => { report.steps.push({ name, data }); console.log('STEP', name, JSON.stringify(data).slice(0, 2000)); };
+const step = (name, data) => { report.steps.push({ name, data }); console.log('STEP', name, JSON.stringify(data).slice(0, 2400)); };
 const FIND_FILTER = `[...(document.querySelector('#multi-editor')?.querySelectorAll('select') ?? [])].find(select => select.dataset.milthmEventFilter === '1' || [...select.options].some(option => option.value === 'paintEvents'))`;
 const READ_OPTIONS = `(() => {
   const filter = ${FIND_FILTER};
   if (!filter) return null;
   return { value: filter.value, title: filter.title, options: [...filter.options].map(option => ({ value: option.value, label: option.textContent })) };
 })()`;
-const FIND_CHECKBOXES = `(() => {
+const READ_CHECKBOXES = `(() => {
   const list = document.querySelector('#multi-line-editor [data-milthm-multiline-columns] .milthm-edit-columns-list');
   if (!list) return null;
   return [...list.querySelectorAll('label')].map(label => ({ value: label.querySelector('input')?.value, label: label.textContent, checked: Boolean(label.querySelector('input')?.checked) }));
@@ -50,10 +51,16 @@ const FIND_CHECKBOXES = `(() => {
 const BASE_LABELS = ['X 坐标', 'Y 坐标', '旋转', '线体不透明度（LineBodyTransparency 8）', '流速倍率'];
 const REMAPPED_LABELS = ['X 坐标', 'Y 坐标', '旋转', '轨道整体不透明度（线头+线身，Transparency 2）', '流速倍率'];
 const HEADER_LABELS = ['X 坐标', 'Y 坐标', '旋转', '轨道整体不透明度', '流速倍率'];
+const CHECKBOX_LABELS = ['X 坐标', 'Y 坐标', '旋转', '轨道整体不透明度', '流速倍率', '轨道大小·X', '轨道大小·Y', '轨道颜色', '轨道文字'];
+const CHECKED_COLUMNS = ['moveXEvents', 'rotateEvents', 'alphaEvents', 'speedEvents', 'colorEvents', 'textEvents'];
+const CHECKED_LABELS = ['X 坐标', '旋转', '轨道整体不透明度', '流速倍率', '轨道颜色', '轨道文字'];
 const EXPECTED = ['全部', ...BASE_LABELS, '轨道大小·X（Size 3）', '轨道大小·Y（Size 3）', '轨道颜色（Color 22）', '轨道文字（文本事件）'];
 const hasPaint = options => options.some(option => option.value === 'paintEvents');
 const labelsOf = options => options.map(option => option.label);
-const headerLabels = () => evaluate(`window.rpenMods.editor.timeline?.__milthmHeaderLabels ?? null`);
+const readTimeline = () => evaluate(`(() => {
+  const timeline = window.rpenMods.editor.timeline;
+  return { eventTypes: [...(timeline?.eventTypes ?? [])], header: timeline?.__milthmHeaderLabels ?? null };
+})()`);
 
 try {
   await waitFor(`(async () => { if (!window.rpenMods?.manager) return null; await window.rpenMods.manager.ready; return true; })()`);
@@ -103,8 +110,8 @@ try {
 
   // ---- v0.7.3: timeline header labels (single-line) ----
   await sleep(600);
-  const singleHeader = await headerLabels();
-  step('header-single-line', { labels: singleHeader, expected: HEADER_LABELS });
+  const single = await readTimeline();
+  step('header-single-line', single);
 
   // ---- enter multi-line events mode ----
   step('enter-multiline', await evaluate(`(() => {
@@ -119,10 +126,10 @@ try {
   })()`));
   await waitFor(`(() => { const session = window.rpenMods.editor.session; return session.multiLineActive && session.multiLineMode === 'events' && session.targetLineIndices.length === 3; })()`, 5000, 'multi-line mode');
   await sleep(900);
-  const multiHeader = await headerLabels();
-  step('header-multi-line', { labels: multiHeader, expected: HEADER_LABELS });
+  const defaultMulti = await readTimeline();
+  step('header-multi-line-default', defaultMulti);
 
-  // ---- v0.7.4: 多线编辑 pane checkbox group ----
+  // ---- v0.7.5: 多线编辑 pane checkbox group with ALL event kinds ----
   await evaluate(`(() => {
     const editor = window.rpenMods.editor;
     editor.activatePane('multi-line');
@@ -130,54 +137,53 @@ try {
     editor.invalidate?.();
     return true;
   })()`);
-  await waitFor(`(() => Boolean(${FIND_CHECKBOXES}))()`, 10000, 'multi-line pane checkbox group');
-  const checkboxes = await evaluate(FIND_CHECKBOXES);
+  await waitFor(`(() => Boolean(${READ_CHECKBOXES}))()`, 10000, 'multi-line pane checkbox group');
+  const checkboxes = await evaluate(READ_CHECKBOXES);
   step('edit-columns-list', checkboxes);
 
-  // restriction off while nothing is checked: a rotate event can stay selected
-  const beforeRestriction = await evaluate(`(() => {
-    const editor = window.rpenMods.editor;
-    const session = editor.session;
-    session.multiEventSelection.set(0, new Set(['rotateEvents:0']));
-    editor.invalidate?.();
-    return { rotateStillSelected: true };
-  })()`);
-  await sleep(700);
-  const relaxCheck = await evaluate(`(() => {
-    const session = window.rpenMods.editor.session;
-    return { kept: Boolean(session.multiEventSelection.get(0)?.has('rotateEvents:0')) };
-  })()`);
-  step('no-restriction-allows-rotate', relaxCheck);
-
-  // check X + alpha: selects those columns, locks everything else
+  // select a subset incl. extended kinds: X/旋转/整体不透明度/流速/颜色/文字 (drop Y)
   step('check-columns', await evaluate(`(() => {
     const list = document.querySelector('#multi-line-editor [data-milthm-multiline-columns] .milthm-edit-columns-list');
-    const wanted = new Set(['moveXEvents', 'alphaEvents']);
+    const wanted = new Set(${JSON.stringify(CHECKED_COLUMNS)});
     for (const input of list.querySelectorAll('input')) input.checked = wanted.has(input.value);
     list.dispatchEvent(new Event('change', { bubbles: true }));
     const editor = window.rpenMods.editor;
-    const session = editor.session;
-    const chart = editor.chart;
-    const expected = {};
-    for (const lineIndex of session.targetLineIndices) {
-      const line = chart.judgeLineList?.[lineIndex];
-      expected[lineIndex] = (line?.eventLayers?.[0]?.moveXEvents ?? []).length + (line?.eventLayers?.[0]?.alphaEvents ?? []).length;
-    }
-    const actual = {};
-    for (const lineIndex of session.targetLineIndices) actual[lineIndex] = session.multiEventSelection.get(lineIndex)?.size ?? 0;
-    return { expected, actual, currentLineSelection: session.eventSelection.size };
+    return { checked: [...list.querySelectorAll('input:checked')].map(input => input.value) };
   })()`));
+  await waitFor(`(() => { const timeline = window.rpenMods.editor.timeline; const types = timeline?.eventTypes ?? []; return types.length === 6 && types.includes('colorEvents') ? true : null; })()`, 8000, 'selected columns become timeline columns');
   await sleep(700);
+  const selectedColumns = await readTimeline();
+  step('timeline-selected-columns', selectedColumns);
 
-  // a manually added disabled-column event must be dropped by the next frame
-  step('restriction-blocks-rotate', await evaluate(`(async () => {
+  // hidden kinds are locked: a manually selected Y event is dropped on the next frame
+  step('restriction-blocks-hidden', await evaluate(`(async () => {
     const editor = window.rpenMods.editor;
     const session = editor.session;
-    session.multiEventSelection.get(0)?.add('rotateEvents:0');
+    session.multiEventSelection.set(0, new Set(['moveYEvents:0']));
     editor.invalidate?.();
-    await new Promise(resolve => setTimeout(resolve, 700));
-    return { rotateRemoved: !session.multiEventSelection.get(0)?.has('rotateEvents:0') };
+    await new Promise(resolve => setTimeout(resolve, 800));
+    return { yRemoved: !session.multiEventSelection.get(0)?.has('moveYEvents:0') };
   })()`));
+
+  // selecting visible events still works: the checked columns' events can be batch-selected
+  step('select-visible', await evaluate(`(() => {
+    const editor = window.rpenMods.editor;
+    const session = editor.session;
+    const chart = editor.chart;
+    session.multiEventSelection.set(0, new Set());
+    for (const lineIndex of session.targetLineIndices) {
+      const line = chart.judgeLineList?.[lineIndex];
+      const keys = new Set();
+      (line?.eventLayers?.[0]?.moveXEvents ?? []).forEach((_event, index) => keys.add('moveXEvents:' + index));
+      (line?.eventLayers?.[0]?.alphaEvents ?? []).forEach((_event, index) => keys.add('alphaEvents:' + index));
+      (line?.extended?.colorEvents ?? []).forEach((_event, index) => keys.add('colorEvents:' + index));
+      session.multiEventSelection.set(lineIndex, keys);
+    }
+    session.eventSelection = new Set(session.multiEventSelection.get(session.lineIndex) ?? []);
+    editor.invalidate?.();
+    return { line0: session.multiEventSelection.get(0)?.size ?? 0, line1: session.multiEventSelection.get(1)?.size ?? 0, line2: session.multiEventSelection.get(2)?.size ?? 0 };
+  })()`));
+  await sleep(700);
 
   const result = {
     version: report.steps.find(entry => entry.name === 'mod')?.data?.version,
@@ -186,23 +192,25 @@ try {
     paintHiddenInitially: !hasPaint(initial?.options ?? []),
     remappedLabelOk: (remapped?.options ?? []).find(option => option.value === 'alphaEvents')?.label === REMAPPED_LABELS[3],
     paintHiddenAfterRemap: !hasPaint(remapped?.options ?? []),
-    singleHeaderLabels: singleHeader,
-    singleHeaderOk: JSON.stringify(singleHeader) === JSON.stringify(HEADER_LABELS),
-    multiHeaderLabels: multiHeader,
-    multiHeaderOk: JSON.stringify(multiHeader) === JSON.stringify(HEADER_LABELS),
-    checkboxLabels: (checkboxes ?? []).map(item => item.label),
-    checkboxLabelsOk: JSON.stringify((checkboxes ?? []).map(item => item.label)) === JSON.stringify(REMAPPED_LABELS),
-    noRestrictionAllowsRotate: Boolean(relaxCheck?.kept),
-    checkboxSelection: report.steps.find(entry => entry.name === 'check-columns')?.data ?? null,
-    restrictionRemovesRotate: Boolean(report.steps.find(entry => entry.name === 'restriction-blocks-rotate')?.data?.rotateRemoved),
+    singleHeaderOk: JSON.stringify(single.header) === JSON.stringify(HEADER_LABELS),
+    checkoutDefaults: (checkboxes ?? []).map(item => ({ value: item.value, label: item.label, checked: item.checked })),
+    checkboxLabelsOk: JSON.stringify((checkboxes ?? []).map(item => item.label)) === JSON.stringify(CHECKBOX_LABELS),
+    defaultColumnsOk: JSON.stringify(defaultMulti.eventTypes) === JSON.stringify(['moveXEvents', 'moveYEvents', 'rotateEvents', 'alphaEvents', 'speedEvents']),
+    defaultHeaderOk: JSON.stringify(defaultMulti.header) === JSON.stringify(HEADER_LABELS),
+    selectedColumns: selectedColumns.eventTypes,
+    selectedHeader: selectedColumns.header,
+    selectedColumnsOk: JSON.stringify(selectedColumns.eventTypes) === JSON.stringify(CHECKED_COLUMNS),
+    selectedHeaderOk: JSON.stringify(selectedColumns.header) === JSON.stringify(CHECKED_LABELS),
+    hiddenLocked: Boolean(report.steps.find(entry => entry.name === 'restriction-blocks-hidden')?.data?.yRemoved),
+    visibleSelection: report.steps.find(entry => entry.name === 'select-visible')?.data ?? null,
     exceptions: exceptions.length,
   };
-  const selection = result.checkboxSelection;
-  result.checkboxSelectionOk = Boolean(selection) && Object.keys(selection.expected ?? {}).every(lineIndex => selection.expected[lineIndex] > 0 && selection.expected[lineIndex] === selection.actual[lineIndex]);
+  const visible = result.visibleSelection;
+  result.visibleSelectionOk = Boolean(visible) && Object.values(visible).every(count => count > 0);
   result.ok = Boolean(result.version) && result.defaultMatches && result.paintHiddenInitially && result.remappedLabelOk
-    && result.paintHiddenAfterRemap && result.singleHeaderOk && result.multiHeaderOk && result.checkboxLabelsOk
-    && result.noRestrictionAllowsRotate && result.checkboxSelectionOk && result.restrictionRemovesRotate && result.exceptions === 0;
-  void beforeRestriction;
+    && result.paintHiddenAfterRemap && result.singleHeaderOk && result.checkboxLabelsOk && result.defaultColumnsOk
+    && result.defaultHeaderOk && result.selectedColumnsOk && result.selectedHeaderOk && result.hiddenLocked
+    && result.visibleSelectionOk && result.exceptions === 0;
 
   await evaluate(`(() => { try { window.rpenMods.editor.activatePane('multi-line'); } catch (error) { /* ignore */ } return true; })()`);
   await sleep(700);

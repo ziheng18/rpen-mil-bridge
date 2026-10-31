@@ -4,7 +4,7 @@
       "name": "mod",
       "data": {
         "loaded": "loaded",
-        "version": "0.7.4"
+        "version": "0.7.5"
       }
     },
     {
@@ -133,14 +133,14 @@
     {
       "name": "header-single-line",
       "data": {
-        "labels": [
-          "X 坐标",
-          "Y 坐标",
-          "旋转",
-          "轨道整体不透明度",
-          "流速倍率"
+        "eventTypes": [
+          "moveXEvents",
+          "moveYEvents",
+          "rotateEvents",
+          "alphaEvents",
+          "speedEvents"
         ],
-        "expected": [
+        "header": [
           "X 坐标",
           "Y 坐标",
           "旋转",
@@ -162,16 +162,16 @@
       }
     },
     {
-      "name": "header-multi-line",
+      "name": "header-multi-line-default",
       "data": {
-        "labels": [
-          "X 坐标",
-          "Y 坐标",
-          "旋转",
-          "轨道整体不透明度",
-          "流速倍率"
+        "eventTypes": [
+          "moveXEvents",
+          "moveYEvents",
+          "rotateEvents",
+          "alphaEvents",
+          "speedEvents"
         ],
-        "expected": [
+        "header": [
           "X 坐标",
           "Y 坐标",
           "旋转",
@@ -186,63 +186,103 @@
         {
           "value": "moveXEvents",
           "label": "X 坐标",
-          "checked": false
+          "checked": true
         },
         {
           "value": "moveYEvents",
           "label": "Y 坐标",
-          "checked": false
+          "checked": true
         },
         {
           "value": "rotateEvents",
           "label": "旋转",
-          "checked": false
+          "checked": true
         },
         {
           "value": "alphaEvents",
-          "label": "轨道整体不透明度（线头+线身，Transparency 2）",
-          "checked": false
+          "label": "轨道整体不透明度",
+          "checked": true
         },
         {
           "value": "speedEvents",
           "label": "流速倍率",
+          "checked": true
+        },
+        {
+          "value": "scaleXEvents",
+          "label": "轨道大小·X",
+          "checked": false
+        },
+        {
+          "value": "scaleYEvents",
+          "label": "轨道大小·Y",
+          "checked": false
+        },
+        {
+          "value": "colorEvents",
+          "label": "轨道颜色",
+          "checked": false
+        },
+        {
+          "value": "textEvents",
+          "label": "轨道文字",
           "checked": false
         }
       ]
     },
     {
-      "name": "no-restriction-allows-rotate",
-      "data": {
-        "kept": true
-      }
-    },
-    {
       "name": "check-columns",
       "data": {
-        "expected": {
-          "0": 15,
-          "1": 14,
-          "2": 13
-        },
-        "actual": {
-          "0": 15,
-          "1": 14,
-          "2": 13
-        },
-        "currentLineSelection": 15
+        "checked": [
+          "moveXEvents",
+          "rotateEvents",
+          "alphaEvents",
+          "speedEvents",
+          "colorEvents",
+          "textEvents"
+        ]
       }
     },
     {
-      "name": "restriction-blocks-rotate",
+      "name": "timeline-selected-columns",
       "data": {
-        "rotateRemoved": true
+        "eventTypes": [
+          "moveXEvents",
+          "rotateEvents",
+          "alphaEvents",
+          "speedEvents",
+          "colorEvents",
+          "textEvents"
+        ],
+        "header": [
+          "X 坐标",
+          "旋转",
+          "轨道整体不透明度",
+          "流速倍率",
+          "轨道颜色",
+          "轨道文字"
+        ]
+      }
+    },
+    {
+      "name": "restriction-blocks-hidden",
+      "data": {
+        "yRemoved": true
+      }
+    },
+    {
+      "name": "select-visible",
+      "data": {
+        "line0": 15,
+        "line1": 14,
+        "line2": 13
       }
     }
   ],
   "exceptions": [],
   "console": [],
   "result": {
-    "version": "0.7.4",
+    "version": "0.7.5",
     "defaultLabels": [
       "全部",
       "X 坐标",
@@ -259,47 +299,83 @@
     "paintHiddenInitially": true,
     "remappedLabelOk": true,
     "paintHiddenAfterRemap": true,
-    "singleHeaderLabels": [
-      "X 坐标",
-      "Y 坐标",
-      "旋转",
-      "轨道整体不透明度",
-      "流速倍率"
-    ],
     "singleHeaderOk": true,
-    "multiHeaderLabels": [
-      "X 坐标",
-      "Y 坐标",
-      "旋转",
-      "轨道整体不透明度",
-      "流速倍率"
-    ],
-    "multiHeaderOk": true,
-    "checkboxLabels": [
-      "X 坐标",
-      "Y 坐标",
-      "旋转",
-      "轨道整体不透明度（线头+线身，Transparency 2）",
-      "流速倍率"
+    "checkoutDefaults": [
+      {
+        "value": "moveXEvents",
+        "label": "X 坐标",
+        "checked": true
+      },
+      {
+        "value": "moveYEvents",
+        "label": "Y 坐标",
+        "checked": true
+      },
+      {
+        "value": "rotateEvents",
+        "label": "旋转",
+        "checked": true
+      },
+      {
+        "value": "alphaEvents",
+        "label": "轨道整体不透明度",
+        "checked": true
+      },
+      {
+        "value": "speedEvents",
+        "label": "流速倍率",
+        "checked": true
+      },
+      {
+        "value": "scaleXEvents",
+        "label": "轨道大小·X",
+        "checked": false
+      },
+      {
+        "value": "scaleYEvents",
+        "label": "轨道大小·Y",
+        "checked": false
+      },
+      {
+        "value": "colorEvents",
+        "label": "轨道颜色",
+        "checked": false
+      },
+      {
+        "value": "textEvents",
+        "label": "轨道文字",
+        "checked": false
+      }
     ],
     "checkboxLabelsOk": true,
-    "noRestrictionAllowsRotate": true,
-    "checkboxSelection": {
-      "expected": {
-        "0": 15,
-        "1": 14,
-        "2": 13
-      },
-      "actual": {
-        "0": 15,
-        "1": 14,
-        "2": 13
-      },
-      "currentLineSelection": 15
+    "defaultColumnsOk": true,
+    "defaultHeaderOk": true,
+    "selectedColumns": [
+      "moveXEvents",
+      "rotateEvents",
+      "alphaEvents",
+      "speedEvents",
+      "colorEvents",
+      "textEvents"
+    ],
+    "selectedHeader": [
+      "X 坐标",
+      "旋转",
+      "轨道整体不透明度",
+      "流速倍率",
+      "轨道颜色",
+      "轨道文字"
+    ],
+    "selectedColumnsOk": true,
+    "selectedHeaderOk": true,
+    "hiddenLocked": true,
+    "visibleSelection": {
+      "line0": 15,
+      "line1": 14,
+      "line2": 13
     },
-    "restrictionRemovesRotate": true,
     "exceptions": 0,
-    "checkboxSelectionOk": true,
+    "visibleSelectionOk": true,
     "ok": true
   }
 }

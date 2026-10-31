@@ -106,7 +106,7 @@ const sizeValues = line => semanticEvents(line).size.map(event => [Number(event.
   const ease = { type: 0, press: 0, isValueExp: false, cusValueExp: '', clipLeft: 0, clipRight: 1 };
   const raw = (startBeat, endBeat, start, end = start) => ({ startTime: [startBeat, 0, 1], endTime: [endBeat, 0, 1], start, end, ease });
   // lineAlpha: first event at beat 4 with start 0.5 -> init at beat 0 worth 0.5 for at most 1 beat
-  // bodyAlpha: no events -> 1-beat opacity-0 init
+  // bodyAlpha: no events -> 1-beat opacity-1 init (Rain Editor default)
   // headAlpha: first event at beat 0.25 -> init [0, 0.25] with its start value
   const line = {
     eventLayers: [{ moveXEvents: [], moveYEvents: [], rotateEvents: [], alphaEvents: [], speedEvents: [] }],
@@ -127,7 +127,8 @@ const sizeValues = line => semanticEvents(line).size.map(event => [Number(event.
   const bodyInit = initOf(semantics.bodyAlpha);
   const headInit = initOf(semantics.headAlpha);
   assert.ok(bodyInit, 'empty bodyAlpha must get an initialiser');
-  assert.equal(Number(bodyInit.start), 0);
+  // Rain Editor's default for a missing transparency track is 1 (fully opaque)
+  assert.equal(Number(bodyInit.start), 1);
   assert.equal(beatOf(bodyInit.startTime), 0);
   assert.equal(beatOf(bodyInit.endTime), 1);
   assert.ok(headInit, 'headAlpha must get an initialiser');
