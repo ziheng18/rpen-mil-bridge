@@ -6,14 +6,14 @@
     "zh-CN": "Milthm 自制谱桥接",
     "en-US": "Milthm fmt=2 Bridge"
   },
-  "version": "0.7.15",
+  "version": "0.7.16",
   "author": {
     "zh-CN": "可行性验证原型",
     "en-US": "Feasibility prototype"
   },
   "description": {
-    "zh-CN": "在 RPEN 中导入/编辑/导出 Milthm 自制谱（fmt=2），轨道式。v0.7.15：包内 README 精简（不再逐版本流水，完整历史见仓库说明文档）；v0.7.14：预览播放时隐藏时间轴列下拉（此前 5 个 Milthm 下拉会浮在预览画面上）；开关预览即刻隐藏/恢复。v0.7.13：父子线与多事件层不再被丢弃/静默清空——导出时按 RPEN 自身语义压平（事件层按数值相加合并为单轨；父子线把父级位移/旋转烘焙成子线的绝对关键帧），并在导出提示里说明；父线在编辑器里保留（预览走 RPEN 原生层级），只在导出时烘焙。v0.7.12：修复预览「高速音符」——Speed(12)×FlowSpeed(5) 合成轨道在事件跳变边界取了跳变后的值，导致跳变前的整段被拉成斜坡（《エゴイスト》Track 4 末拍 Speed 1→80 使 318→635 拍从 9.34 爬到 747，后半段音符快到 80 倍）；现在每段取边界前的值，与渲染器一致。v0.7.11：修复「流速倍率」通道/语义列不生效（Speed(12) 主速线的 FlowSpeed(5) 改为写回 flowRaw；FlowSpeed(5) 主速线写回语义并同步载体；线体/线头/整体不透明度通道同样写回）；预览/导出都会响应。v0.7.10：音符级动画导入提示更准确。v0.7.9：多线编辑事件列含全部普通层语义种类。v0.7.8：导入故事板转文本线/贴图线。v0.7.1：全部文字换随包 ChillRoundF（OFL-1.1）。",
-    "en-US": "Import/edit/export Milthm fan charts (fmt=2) in RPEN. Track-based: each judge line = one Milthm track. v0.7.15: slimmer package README (no per-version changelog; see the repository docs); v0.7.14: hide the timeline column dropdowns while the playback preview is open (the five Milthm selects used to float above the preview canvas); they hide/restore on the same click that toggles the preview. v0.7.13: parent lines and extra event layers are no longer dropped or silently reset — export flattens them with RPEN's own semantics (event layers are numerically summed into one track; parent transforms are baked into the child's absolute X/Y/rotation keyframes) and says so in the export warnings; the hierarchy stays in the editor (preview uses RPEN's native composition) and is only baked on export. v0.7.12: fixes \"high-speed notes\" in the preview — the Speed(12)×FlowSpeed(5) composed track sampled segment ends with the post-jump value, so the whole segment before an event jump became a ramp (《エゴイスト》Track 4's 1→80 Speed burst on the last beat made beats 318→635 climb from 9.34 to 747, i.e. up to 80× too fast for the second half of that track); each segment now takes the value from before the boundary, matching the renderer. v0.7.11: fixes the 流速倍率 (FlowSpeed(5)) channel / semantic column having no effect (Speed(12)-primary lines write flowRaw; FlowSpeed(5)-primary lines write the semantic list and speed carrier; line body/head/whole transparency channels now also sync back); preview and export both respond. v0.7.10: more accurate note-level animation warnings. v0.7.9: multi-line columns cover every normal-layer kind. v0.7.8: imported storyboards become text lines / line textures. v0.7.1: all RPEN text uses the bundled ChillRoundF font (SIL OFL-1.1)."
+    "zh-CN": "在 RPEN 中导入 / 编辑 / 导出 Milthm 自制谱（fmt=2）：每条 Milthm 线映射成一条轨道，原生 5 个事件列可切换为 Milthm 语义（X/Y/旋转/线体·线头·整体不透明度/流速倍率/轨道大小），预览按 Milthm 轨道样式与渲染器流速公式绘制，未编辑的谱面导出与源谱 0 diff。RPEN 表达不了的 Milthm 数据（噪域、着色器、GIF、表达式缓动、音符级动画等）原样暂存，导出时提示损失。",
+    "en-US": "Import, edit and export Milthm fan charts (fmt=2) in RPEN: every Milthm line becomes a track, the five native event columns can be mapped to Milthm semantics (X/Y/rotation/body-head-whole opacity/flow speed/size), and the preview draws Milthm-style tracks with the renderer's speed formula. An untouched chart exports with 0 diff; Milthm data RPEN cannot express (noise areas, shaders, GIF, expression easing, note-level animations...) is preserved as-is and reported as warnings on export."
   },
   "entry": "main.mjs",
   "settings": {
