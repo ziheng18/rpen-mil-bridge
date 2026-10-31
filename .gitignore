@@ -17,3 +17,20 @@ rpen-milthm-bridge-test/out/
 # 研究用 RPU 源码克隆（外部仓库）
 /analyze/rpu-research/RainPlayerUnity/
 
+
+# 发布清理：以下文件仅本地保留，不进入仓库
+# （第三方谱面数据 / 项目文档（含从 RPEN 拷贝的协议文档）/ RPU 研究资料）
+/交接文档.md
+/RPEN-Milthm桥接-可行性验证报告.md
+/RPEN-Milthm桥接-v0.2-功能增强说明.md
+/RPEN-Milthm桥接-v0.4-事件列与导出集成.md
+/RPEN-vs-Milracle-谱面格式对比.md
+/MOD-PROTOCOL.zh-CN.md
+/GLOBAL-EVENTS-PROTOCOL.zh-CN.md
+/mod-api-v1.d.ts
+/mod-v1.schema.json
+/rpen-milthm-bridge/README.md
+/analyze/rpu-research/RPU-render-semantics.md
+/analyze/rpu-research/_shots/
+/rpen-milthm-bridge-test/export-flatten/baseline-chart.json
+/rpen-milthm-bridge-test/export-flatten/flattened-chart.json
