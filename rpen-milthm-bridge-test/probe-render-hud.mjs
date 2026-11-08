@@ -70,6 +70,7 @@ try {
     scene.hudEnabled = true;
     scene.project = { duration: 100 };
     scene.preview = { completionTimes: [1, 2, 3, 4, 5], duration: 100 };
+    scene.settings = { autoplayText: 'AUTOPLAY' };
     const canvas = document.createElement('canvas'); canvas.width = 960; canvas.height = 540;
     const context = canvas.getContext('2d');
     context.fillStyle = '#000'; context.fillRect(0, 0, 960, 540);
@@ -82,7 +83,69 @@ try {
     return { error, litPixels: lit, hud: scene.preview.__milthmHud ?? null };
   })()`));
 
-  // 3) non-Milthm chart -> stock autoplay HUD path (states empty -> stock returns early)
+  // 3) the combo caption follows the render setting "Autoplay 文案" (settings.autoplayText)
+  step('caption-setting', await evaluate(`(async () => {
+    const { AutoplayScene } = await import('/src/ui/render-studio/renderer.mjs');
+    const editor = window.rpenMods.editor;
+    const draw = autoplayText => {
+      const scene = Object.create(AutoplayScene.prototype);
+      scene.chart = editor.chart;
+      scene.hudEnabled = true;
+      scene.project = { duration: 100 };
+      scene.preview = { completionTimes: [1, 2, 3, 4, 5], duration: 100 };
+      scene.settings = { autoplayText };
+      const canvas = document.createElement('canvas'); canvas.width = 960; canvas.height = 540;
+      const context = canvas.getContext('2d');
+      context.fillStyle = '#000'; context.fillRect(0, 0, 960, 540);
+      const frame = { width: 960, height: 540, viewport: { left: 0, top: 0, width: 960, height: 540 }, scale: 960 / 1350, states: [{}] };
+      scene.paintHud(context, frame, 10);
+      return { allPerfect: scene.preview.__milthmHud?.allPerfect ?? null, comboCaption: scene.preview.__milthmHud?.comboCaption ?? null, combo: scene.preview.__milthmHud?.combo ?? null, image: canvas.toDataURL('image/png') };
+    };
+    return { custom: draw('MY CAPTION'), empty: draw(''), autoplay: draw('AUTOPLAY') };
+  })()`));
+
+  const captionImages = report.steps.find(item => item.name === 'caption-setting')?.data ?? {};
+  if (captionImages.autoplay?.image) {
+    fs.writeFileSync(path.join(OUT, 'caption-autoplay.png'), Buffer.from(String(captionImages.autoplay.image).split(',')[1], 'base64'));
+  }
+  if (captionImages.empty?.image) {
+    fs.writeFileSync(path.join(OUT, 'caption-empty.png'), Buffer.from(String(captionImages.empty.image).split(',')[1], 'base64'));
+  }
+
+  // 4) render-studio visibility switches hide the matching Milthm HUD parts
+  step('ui-toggles', await evaluate(`(async () => {
+    const { AutoplayScene } = await import('/src/ui/render-studio/renderer.mjs');
+    const editor = window.rpenMods.editor;
+    const draw = settings => {
+      const scene = Object.create(AutoplayScene.prototype);
+      scene.chart = editor.chart;
+      scene.hudEnabled = true;
+      scene.project = { duration: 100 };
+      scene.preview = { completionTimes: [1, 2, 3, 4, 5], duration: 100 };
+      scene.settings = settings;
+      const canvas = document.createElement('canvas'); canvas.width = 960; canvas.height = 540;
+      const context = canvas.getContext('2d');
+      context.fillStyle = '#000'; context.fillRect(0, 0, 960, 540);
+      const frame = { width: 960, height: 540, viewport: { left: 0, top: 0, width: 960, height: 540 }, scale: 960 / 1350, states: [{}] };
+      scene.paintHud(context, frame, 10);
+      const data = context.getImageData(0, 0, 960, 540).data;
+      let lit = 0;
+      for (let index = 0; index < data.length; index += 4) if (data[index] > 40 || data[index + 1] > 40 || data[index + 2] > 40) lit += 1;
+      const hud = scene.preview.__milthmHud;
+      return { visible: hud?.visible ?? null, title: hud?.title ?? null, level: hud?.level ?? null, pauseDrawn: Boolean(hud?.pause), allPerfect: hud?.allPerfect ?? null, lit };
+    };
+    return {
+      allOn: draw({}),
+      allOff: draw({ showPause: false, showChartName: false, showChartLevel: false, showCombo: false, showProgress: false, autoplayText: '' }),
+      pauseOff: draw({ showPause: false }),
+      comboOff: draw({ showCombo: false, autoplayText: 'AUTOPLAY' }),
+      progressOff: draw({ showProgress: false }),
+      nameOff: draw({ showChartName: false }),
+      levelOff: draw({ showChartLevel: false }),
+    };
+  })()`));
+
+  // 5) non-Milthm chart -> stock autoplay HUD path (states empty -> stock returns early)
   step('rpe-passthrough', await evaluate(`(async () => {
     const { AutoplayScene } = await import('/src/ui/render-studio/renderer.mjs');
     const editor = window.rpenMods.editor;
@@ -115,6 +178,8 @@ try {
   const patchStep = report.steps.find(item => item.name === 'patch')?.data ?? {};
   const hudStep = report.steps.find(item => item.name === 'milthm-hud')?.data ?? {};
   const passStep = report.steps.find(item => item.name === 'rpe-passthrough')?.data ?? {};
+  const captionStep = report.steps.find(item => item.name === 'caption-setting')?.data ?? {};
+  const toggleStep = report.steps.find(item => item.name === 'ui-toggles')?.data ?? {};
   const panelStep = report.steps.find(item => item.name === 'render-panel')?.data ?? {};
   result.patchInstalled = Boolean(patchStep.patched);
   result.hudError = hudStep.error ?? null;
@@ -130,11 +195,38 @@ try {
     && Math.abs(Number(result.pauseBarHeightRatio ?? 0) - 0.67) <= 0.06
     && Math.abs(Number(result.pauseGapRatio ?? 0) - 0.235) <= 0.03;
   result.stockHudForRpe = Boolean(passStep.stockHudCalled) && !passStep.error;
+  result.autoplayCaption = hudStep.hud?.comboCaption ?? null;
+  result.customCaption = captionStep.custom?.allPerfect ?? null;
+  result.emptyCaption = captionStep.empty?.allPerfect ?? null;
+  result.emptyCaptionCombo = captionStep.empty?.combo ?? null;
+  result.uiToggles = {
+    allOn: toggleStep.allOn?.visible ?? null,
+    allOff: toggleStep.allOff?.visible ?? null,
+    pauseOff: toggleStep.pauseOff?.visible ?? null,
+    comboOff: toggleStep.comboOff?.visible ?? null,
+    progressOff: toggleStep.progressOff?.visible ?? null,
+    nameOff: toggleStep.nameOff?.visible ?? null,
+    levelOff: toggleStep.levelOff?.visible ?? null,
+  };
+  result.uiTogglesOk = Boolean(
+    toggleStep.allOn?.visible?.pause && toggleStep.allOn?.visible?.title && toggleStep.allOn?.visible?.level
+    && toggleStep.allOff && ['pause', 'title', 'level', 'combo', 'progress'].every(key => toggleStep.allOff.visible[key] === false)
+    && toggleStep.allOff.title === null && toggleStep.allOff.level === null && toggleStep.allOff.pauseDrawn === false
+    && toggleStep.pauseOff?.visible?.pause === false && toggleStep.pauseOff?.visible?.title === true
+    && toggleStep.comboOff?.visible?.combo === false && toggleStep.comboOff?.allPerfect === null
+    && toggleStep.progressOff?.visible?.progress === false
+    && toggleStep.nameOff?.visible?.title === false && toggleStep.nameOff?.title === null
+    && toggleStep.levelOff?.visible?.level === false && String(toggleStep.levelOff?.title ?? '').replace(/\s+/g, ' ').trim() === 'Class Memories'
+    && Number(toggleStep.allOn?.lit ?? 0) > 500,
+  );
+  result.captionSettingOk = result.autoplayCaption === 'AUTOPLAY'
+    && result.customCaption === 'MY CAPTION'
+    && result.emptyCaption === null && result.emptyCaptionCombo === 5;
   result.renderPanelOpened = Boolean(panelStep.open);
   const normalizedTitle = String(result.hudTitle ?? '').replace(/\s+/g, ' ').trim(); // the chart title uses a NBSP
   result.ok = result.patchInstalled && !result.hudError && result.hudLitPixels > 1000
     && normalizedTitle === 'Class Memories' && result.hudCombo === 5
-    && result.stockHudForRpe && result.pauseShapeOk && exceptions.length === 0;
+    && result.stockHudForRpe && result.pauseShapeOk && result.captionSettingOk && result.uiTogglesOk && exceptions.length === 0;
   result.steps = report.steps;
 } catch (error) {
   console.log('FAILED', String(error?.stack ?? error));

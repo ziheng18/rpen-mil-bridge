@@ -4,7 +4,7 @@
       "name": "mod",
       "data": {
         "loaded": "loaded",
-        "version": "0.7.23"
+        "version": "0.7.25"
       }
     },
     {
@@ -21,7 +21,16 @@
         "score": "0208138",
         "accuracy": "100.00%",
         "combo": 133,
+        "visible": {
+          "pause": true,
+          "title": true,
+          "level": true,
+          "score": true,
+          "combo": true,
+          "progress": true
+        },
         "allPerfect": "All Perfect",
+        "comboCaption": "All Perfect",
         "seconds": 30,
         "firstCompletion": 1.6551724137931034,
         "lastCompletion": 145.55172413793105,
@@ -67,7 +76,16 @@
         "score": "0000000",
         "accuracy": "100.00%",
         "combo": 0,
+        "visible": {
+          "pause": true,
+          "title": true,
+          "level": true,
+          "score": true,
+          "combo": true,
+          "progress": true
+        },
         "allPerfect": null,
+        "comboCaption": "All Perfect",
         "seconds": 0,
         "firstCompletion": 1.6551724137931034,
         "lastCompletion": 145.55172413793105,
@@ -108,7 +126,7 @@
   ],
   "exceptions": [],
   "result": {
-    "version": "0.7.23",
+    "version": "0.7.25",
     "title": "Class Memories",
     "level": "Cloudburst 8",
     "score": "0208138",

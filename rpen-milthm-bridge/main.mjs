@@ -469,7 +469,7 @@ export async function activate(api) {
   //  - the centred combo block shows "All Perfect" above and the combo number below.
   // Reference proportions (from Milthm's in-game UI): pause circle diameter ≈ 7.1% of the preview
   // height, song title ≈ 3.8%, difficulty ≈ 2.7%, score ≈ 4.2%, "100%" ≈ 2.7%, combo ≈ 4.9%.
-  const drawMilthmPreviewUi = (preview, context, chart, seconds, frame, durationOverride) => {
+  const drawMilthmPreviewUi = (preview, context, chart, seconds, frame, durationOverride, renderSettings) => {
     const viewport = frame?.viewport ?? { left: 0, top: 0, width: 0, height: 0 };
     const scale = frame?.scale ?? 1;
     if (!(viewport.width > 0) || !(scale > 0)) return;
@@ -482,6 +482,15 @@ export async function activate(api) {
     const atY = fraction => top + height * fraction;
     const size = fraction => Math.max(7, fraction * height);
     const font = fraction => `${Math.round(size(fraction))}px RPEGame, sans-serif`;
+    // Render-studio HUD switches (mirrors ui/render-studio/hud.mjs): the render panel options that
+    // hide parts of the stock HUD must hide the same parts of the Milthm HUD. The editor preview
+    // passes no settings, so everything stays visible there.
+    const ui = renderSettings && typeof renderSettings === 'object' ? renderSettings : null;
+    const showPause = !ui || ui.showPause !== false;
+    const showTitle = !ui || ui.showChartName !== false;
+    const showLevel = showTitle && (!ui || ui.showChartLevel !== false);
+    const showComboUi = !ui || ui.showCombo !== false;
+    const showProgress = !ui || ui.showProgress !== false;
     const duration = Math.max(0.001, Number(durationOverride ?? preview.duration) || 600);
     const progress = Math.max(0, Math.min(1, (seconds + (Number(chart.META?.offset) || 0) / 1000) / duration));
     const times = preview.completionTimes ?? [];
@@ -492,10 +501,12 @@ export async function activate(api) {
     const title = String(chart.META?.name ?? '').trim() || '未命名';
     const level = String(chart.META?.level ?? '').trim();
     context.save();
-    // progress bar (kept from RPEN's HUD, at the very top edge)
-    context.globalAlpha = 1;
-    context.fillStyle = 'rgb(125,125,125)';
-    context.fillRect(left, atY(0.004), width * progress, Math.max(2, size(0.009)));
+    if (showProgress) {
+      // progress bar (kept from RPEN's HUD, at the very top edge)
+      context.globalAlpha = 1;
+      context.fillStyle = 'rgb(125,125,125)';
+      context.fillRect(left, atY(0.004), width * progress, Math.max(2, size(0.009)));
+    }
     // pause: translucent white circle with two vertical bars knocked out
     const centerX = atX(0.050);
     const centerY = atY(0.082);
@@ -508,31 +519,35 @@ export async function activate(api) {
     const barWidth = Math.max(1.5, radius * 0.20);
     const barHeight = Math.max(4, radius * 0.67);
     const gap = Math.max(2, radius * 0.235);
-    context.globalAlpha = 0.30;
-    context.fillStyle = '#ffffff';
-    context.beginPath();
-    context.arc(centerX, centerY, radius, 0, Math.PI * 2, false);
-    if (typeof context.roundRect === 'function') {
-      context.roundRect(centerX - gap / 2 - barWidth, centerY - barHeight / 2, barWidth, barHeight, barWidth / 2);
-      context.roundRect(centerX + gap / 2, centerY - barHeight / 2, barWidth, barHeight, barWidth / 2);
-    } else {
-      context.rect(centerX - gap / 2 - barWidth, centerY - barHeight / 2, barWidth, barHeight);
-      context.rect(centerX + gap / 2, centerY - barHeight / 2, barWidth, barHeight);
+    if (showPause) {
+      context.globalAlpha = 0.30;
+      context.fillStyle = '#ffffff';
+      context.beginPath();
+      context.arc(centerX, centerY, radius, 0, Math.PI * 2, false);
+      if (typeof context.roundRect === 'function') {
+        context.roundRect(centerX - gap / 2 - barWidth, centerY - barHeight / 2, barWidth, barHeight, barWidth / 2);
+        context.roundRect(centerX + gap / 2, centerY - barHeight / 2, barWidth, barHeight, barWidth / 2);
+      } else {
+        context.rect(centerX - gap / 2 - barWidth, centerY - barHeight / 2, barWidth, barHeight);
+        context.rect(centerX + gap / 2, centerY - barHeight / 2, barWidth, barHeight);
+      }
+      context.fill('evenodd');
     }
-    context.fill('evenodd');
-    // song title and difficulty, to the right of the pause button
-    const textLeft = atX(0.1004);
-    const textMaxWidth = Math.max(60, left + width - textLeft - size(0.02));
-    context.textAlign = 'left';
-    context.textBaseline = 'middle';
-    context.globalAlpha = 0.92;
-    context.fillStyle = '#ffffff';
-    context.font = font(0.0377);
-    context.fillText(title, textLeft, atY(0.0735), textMaxWidth);
-    if (level) {
-      context.globalAlpha = 0.55;
-      context.font = font(0.0266);
-      context.fillText(level, textLeft, atY(0.108), textMaxWidth);
+    if (showTitle) {
+      // song title and difficulty, to the right of the pause button
+      const textLeft = atX(0.1004);
+      const textMaxWidth = Math.max(60, left + width - textLeft - size(0.02));
+      context.textAlign = 'left';
+      context.textBaseline = 'middle';
+      context.globalAlpha = 0.92;
+      context.fillStyle = '#ffffff';
+      context.font = font(0.0377);
+      context.fillText(title, textLeft, atY(0.0735), textMaxWidth);
+      if (showLevel && level) {
+        context.globalAlpha = 0.55;
+        context.font = font(0.0266);
+        context.fillText(level, textLeft, atY(0.108), textMaxWidth);
+      }
     }
     // score in the top-right corner, faint 100% below it
     const scoreRight = atX(0.9711);
@@ -545,26 +560,36 @@ export async function activate(api) {
     context.globalAlpha = 0.55;
     context.font = font(0.0266);
     context.fillText('100.00%', scoreRight, atY(0.1075));
-    // "All Perfect" above the centred combo number
-    if (combo >= 3) {
+    // Text above the centred combo number. The editor preview shows "All Perfect" (an export is
+    // an autoplay-like playback), while the render studio passes the user's "Autoplay 文案"
+    // (settings.autoplayText) so the rendered video follows that setting; an empty string hides
+    // the caption like the stock render HUD does.
+    const comboCaption = ui ? String(ui.autoplayText ?? '') : 'All Perfect';
+    if (showComboUi && combo >= 3) {
       context.textAlign = 'center';
       context.textBaseline = 'middle';
       context.fillStyle = '#ffffff';
-      context.globalAlpha = 0.9;
-      context.font = font(0.034);
-      context.fillText('All Perfect', atX(0.5), atY(0.070));
+      if (comboCaption) {
+        context.globalAlpha = 0.9;
+        context.font = font(0.034);
+        context.fillText(comboCaption, atX(0.5), atY(0.070));
+      }
       context.globalAlpha = 1;
       context.font = font(0.042);
       context.fillText(String(combo), atX(0.5), atY(0.122));
     }
     context.restore();
     preview.__milthmHud = {
-      title, level, score: scoreText, accuracy: '100.00%', combo,
-      allPerfect: combo >= 3 ? 'All Perfect' : null,
+      title: showTitle ? title : null,
+      level: showLevel ? (level || null) : null,
+      score: scoreText, accuracy: '100.00%', combo,
+      visible: { pause: showPause, title: showTitle, level: showLevel, score: true, combo: showComboUi, progress: showProgress },
+      allPerfect: showComboUi && combo >= 3 ? (comboCaption || null) : null,
+      comboCaption,
       seconds,
       firstCompletion: times[0] ?? null,
       lastCompletion: times[times.length - 1] ?? null,
-      pause: { x: centerX, y: centerY, radius, barWidth, barHeight, gap },
+      pause: showPause ? { x: centerX, y: centerY, radius, barWidth, barHeight, gap } : null,
       scorePosition: { x: scoreRight, y: atY(0.0555) },
       referenceHeight: height,
     };
@@ -590,7 +615,7 @@ export async function activate(api) {
       api.patch(AutoplayScene.prototype, 'paintHud', previous => function (context, frame, seconds) {
         if (!isMilthmChart(this.chart)) return previous.apply(this, arguments);
         if (!this.hudEnabled) return undefined;
-        try { drawMilthmPreviewUi(this.preview, context, this.chart, seconds, frame ?? {}, this.project?.duration); }
+        try { drawMilthmPreviewUi(this.preview, context, this.chart, seconds, frame ?? {}, this.project?.duration, this.settings); }
         catch (error) { api.log('Milthm 渲染 HUD 绘制失败', error); }
         return undefined;
       });
