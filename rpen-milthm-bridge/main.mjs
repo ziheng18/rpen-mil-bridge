@@ -469,7 +469,7 @@ export async function activate(api) {
   //  - the centred combo block shows "All Perfect" above and the combo number below.
   // Reference proportions (from Milthm's in-game UI): pause circle diameter ≈ 7.1% of the preview
   // height, song title ≈ 3.8%, difficulty ≈ 2.7%, score ≈ 4.2%, "100%" ≈ 2.7%, combo ≈ 4.9%.
-  const drawMilthmPreviewUi = (preview, context, chart, seconds, frame) => {
+  const drawMilthmPreviewUi = (preview, context, chart, seconds, frame, durationOverride) => {
     const viewport = frame?.viewport ?? { left: 0, top: 0, width: 0, height: 0 };
     const scale = frame?.scale ?? 1;
     if (!(viewport.width > 0) || !(scale > 0)) return;
@@ -482,7 +482,7 @@ export async function activate(api) {
     const atY = fraction => top + height * fraction;
     const size = fraction => Math.max(7, fraction * height);
     const font = fraction => `${Math.round(size(fraction))}px RPEGame, sans-serif`;
-    const duration = Math.max(0.001, Number(preview.duration) || 600);
+    const duration = Math.max(0.001, Number(durationOverride ?? preview.duration) || 600);
     const progress = Math.max(0, Math.min(1, (seconds + (Number(chart.META?.offset) || 0) / 1000) / duration));
     const times = preview.completionTimes ?? [];
     let combo = 0;
@@ -567,10 +567,32 @@ export async function activate(api) {
   api.patch(Preview.prototype, 'drawUi', previous => function (context, chart, tempo, seconds, selectedLine, frame) {
     if (!isMilthmChart(chart)) return previous.apply(this, arguments);
     try {
-      drawMilthmPreviewUi(this, context, chart, seconds, frame ?? {});
+      drawMilthmPreviewUi(this, context, chart, seconds, frame ?? {}, this.duration);
     } catch (error) { api.log('Milthm 预览 UI 绘制失败', error); }
     return undefined;
   });
+
+  /* ---------------- render studio HUD (RPEN 0.14.0 video rendering) ---------------- */
+  // The 渲染 feature (AutoplayScene in ui/render-studio/renderer.mjs) replaces the instance's
+  // Preview.drawUi with its own paintHud, so the prototype patch above never runs for the render
+  // panel preview or the exported video. Patch paintHud instead: Milthm charts get the same
+  // Milthm-style HUD, every other chart keeps the stock autoplay HUD. The render module is loaded
+  // by RPEN only when the panel opens; importing it here is side-effect free and installing the
+  // patch early means even an already-open render panel picks it up.
+  try {
+    const { AutoplayScene } = await api.importInternal('ui/render-studio/renderer.mjs');
+    if (AutoplayScene?.prototype?.paintHud) {
+      api.patch(AutoplayScene.prototype, 'paintHud', previous => function (context, frame, seconds) {
+        if (!isMilthmChart(this.chart)) return previous.apply(this, arguments);
+        if (!this.hudEnabled) return undefined;
+        try { drawMilthmPreviewUi(this.preview, context, this.chart, seconds, frame ?? {}, this.project?.duration); }
+        catch (error) { api.log('Milthm 渲染 HUD 绘制失败', error); }
+        return undefined;
+      });
+    }
+  } catch (error) {
+    api.log('渲染模块 HUD 适配跳过（RPEN 版本可能不含渲染模块）', error);
+  }
 
   /* ---------------- text font: bundled ChillRoundF replaces RPEN's RPE/RPEGame faces ---------------- */
   // RPEN draws UI / editor / timeline / preview text with its bundled families RPE and RPEGame

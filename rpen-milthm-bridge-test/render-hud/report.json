@@ -1,0 +1,145 @@
+{
+  "steps": [
+    {
+      "name": "mod",
+      "data": {
+        "loaded": "loaded",
+        "version": "0.7.21"
+      }
+    },
+    {
+      "name": "patch",
+      "data": {
+        "hasClass": true,
+        "patched": true
+      }
+    },
+    {
+      "name": "milthm-hud",
+      "data": {
+        "error": null,
+        "litPixels": 1285,
+        "hud": {
+          "title": "Class Memories",
+          "level": "Cloudburst 8",
+          "score": "1000000",
+          "accuracy": "100.00%",
+          "combo": 5,
+          "allPerfect": "All Perfect",
+          "seconds": 10,
+          "firstCompletion": 1,
+          "lastCompletion": 5,
+          "pause": {
+            "x": 48,
+            "y": 44.28,
+            "radius": 21.87,
+            "barWidth": 7,
+            "barHeight": 16.47,
+            "gap": 7
+          },
+          "scorePosition": {
+            "x": 932.256,
+            "y": 29.97
+          },
+          "referenceHeight": 540
+        }
+      }
+    },
+    {
+      "name": "rpe-passthrough",
+      "data": {
+        "error": null,
+        "stockHudCalled": true
+      }
+    },
+    {
+      "name": "render-panel",
+      "data": {
+        "open": true,
+        "canvases": [
+          {
+            "width": 1280,
+            "height": 720
+          }
+        ]
+      }
+    }
+  ],
+  "exceptions": [],
+  "result": {
+    "ok": true,
+    "patchInstalled": true,
+    "hudError": null,
+    "hudLitPixels": 1285,
+    "hudTitle": "Class Memories",
+    "hudCombo": 5,
+    "stockHudForRpe": true,
+    "renderPanelOpened": true,
+    "steps": [
+      {
+        "name": "mod",
+        "data": {
+          "loaded": "loaded",
+          "version": "0.7.21"
+        }
+      },
+      {
+        "name": "patch",
+        "data": {
+          "hasClass": true,
+          "patched": true
+        }
+      },
+      {
+        "name": "milthm-hud",
+        "data": {
+          "error": null,
+          "litPixels": 1285,
+          "hud": {
+            "title": "Class Memories",
+            "level": "Cloudburst 8",
+            "score": "1000000",
+            "accuracy": "100.00%",
+            "combo": 5,
+            "allPerfect": "All Perfect",
+            "seconds": 10,
+            "firstCompletion": 1,
+            "lastCompletion": 5,
+            "pause": {
+              "x": 48,
+              "y": 44.28,
+              "radius": 21.87,
+              "barWidth": 7,
+              "barHeight": 16.47,
+              "gap": 7
+            },
+            "scorePosition": {
+              "x": 932.256,
+              "y": 29.97
+            },
+            "referenceHeight": 540
+          }
+        }
+      },
+      {
+        "name": "rpe-passthrough",
+        "data": {
+          "error": null,
+          "stockHudCalled": true
+        }
+      },
+      {
+        "name": "render-panel",
+        "data": {
+          "open": true,
+          "canvases": [
+            {
+              "width": 1280,
+              "height": 720
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
