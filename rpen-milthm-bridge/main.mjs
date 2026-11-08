@@ -358,19 +358,39 @@ export async function activate(api) {
     if (!images || !runtimes.length) return previous.apply(this, args);
     const originalDescribe = images.describe;
     const textureRestores = runtimes.map(runtime => [runtime.line, runtime.line.Texture]);
+    this.__milthmLineTextures = new Map(textureRestores);
+    this.__milthmLineDescribe = originalDescribe;
     images.describe = () => ({ naturalWidth: 80, naturalHeight: 7200 }); // vertical track bounds (world units)
     for (const runtime of runtimes) runtime.line.Texture = '__milthm_track__';
     try { return previous.apply(this, args); }
     finally {
       images.describe = originalDescribe;
       for (const [line, texture] of textureRestores) line.Texture = texture;
+      this.__milthmLineTextures = null;
+      this.__milthmLineDescribe = undefined;
     }
   });
   api.patch(Preview.prototype, 'drawLine', previous => function (context, line, state, scale) {
     const chart = this.scene?.chart;
     if (!isMilthmChart(chart) || settings()['preview-tracks'] === false) return previous.call(this, context, line, state, scale);
     if (line.extended?.textEvents?.length) return previous.call(this, context, line, state, scale);
-    drawTrack(context, line, state, scale, chart, Number(this.__milthmSeconds ?? 0));
+    // A custom judgement-line texture (the export turns it into a Milthm picture storyboard) is
+    // drawn natively so the preview shows the picked image. A playable line that carries notes
+    // also keeps its track ribbon, matching the renderer (line body + storyboard picture).
+    const realTexture = this.__milthmLineTextures?.get(line);
+    const hasPicture = typeof realTexture === 'string' && realTexture && realTexture !== 'line.png';
+    const seconds = Number(this.__milthmSeconds ?? 0);
+    if (!hasPicture) return drawTrack(context, line, state, scale, chart, seconds);
+    if ((line.notes ?? []).length) drawTrack(context, line, state, scale, chart, seconds);
+    const savedTexture = line.Texture;
+    const savedDescribe = this.images?.describe;
+    line.Texture = realTexture;
+    if (this.images && this.__milthmLineDescribe) this.images.describe = this.__milthmLineDescribe;
+    try { return previous.call(this, context, line, state, scale); }
+    finally {
+      line.Texture = savedTexture;
+      if (this.images && savedDescribe !== undefined) this.images.describe = savedDescribe;
+    }
   });
   api.patch(Preview.prototype, 'drawBackground', previous => function (context, chart, tempo, seconds, ...rest) {
     if (!isMilthmChart(chart) || settings()['preview-dim'] === false) return previous.call(this, context, chart, tempo, seconds, ...rest);

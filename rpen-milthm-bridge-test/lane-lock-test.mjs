@@ -75,7 +75,7 @@ const lockedLine = locked.judgeLineList[mutated.judgeLineList.indexOf(milLine)];
 check('Milthm chart: note positionX is forced to 0', lockedLine.notes[0].positionX === 0);
 check('Milthm chart: note above is forced to 1', lockedLine.notes[0].above === 1);
 check('Milthm chart: bpmfactor is forced to 1', lockedLine.bpmfactor === 1);
-check('Milthm chart: note-bearing line texture falls back to line.png', lockedLine.Texture === 'line.png');
+check('Milthm chart: note-bearing line keeps its custom texture (v0.7.20)', lockedLine.Texture === 'custom-track.png');
 const disabled = normalizeLaneChart(mutated, { 'lane-lock': false });
 check('Milthm chart: lane lock off leaves the chart untouched', disabled === mutated);
 

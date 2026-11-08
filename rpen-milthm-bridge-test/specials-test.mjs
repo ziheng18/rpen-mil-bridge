@@ -148,15 +148,21 @@ const near = (actual, expected, tolerance = 1e-6) => assert.ok(Math.abs(Number(a
   assert.ok(warnings.some(warning => warning.includes('带有 1 个音符')), warnings.join('\n'));
 }
 
-// ---- 4) lane lock keeps a custom texture only on note-less lines ----
+// ---- 4) v0.7.20: lane lock keeps custom textures on track lines too (export -> storyboard) ----
 {
   const chart = prepareChart(chart => {
-    chart.judgeLineList[0].Texture = 'track.png'; // has a note -> track line
+    chart.judgeLineList[0].Texture = 'track.png'; // has a note -> track line, texture must survive
     chart.judgeLineList[1].Texture = 'picture.png'; // no notes -> storyboard line
   });
   const locked = normalizeLaneChart(chart, {});
-  assert.equal(locked.judgeLineList[0].Texture, 'line.png', 'track line texture must stay locked to line.png');
+  assert.equal(locked.judgeLineList[0].Texture, 'track.png', 'track line texture must be preserved (v0.7.20)');
   assert.equal(locked.judgeLineList[1].Texture, 'picture.png', 'storyboard line texture must be preserved');
+  assert.equal(locked.judgeLineList[0].notes[0].positionX, 0, 'lane lock still forces note X to 0');
+  const { chart: exported, warnings } = exportMilthmChart(buildMilthmExportChart(locked), {});
+  const picture = exported.storyboards.filter(storyboard => Number(storyboard.type) === 0 && String(storyboard.data) === 'track.png');
+  assert.equal(picture.length, 1, 'track line texture exports as a picture storyboard');
+  assert.ok(exported.lines.some(line => (line.notes ?? []).length === 1), 'the textured line still exports as a track');
+  assert.ok(warnings.some(warning => warning.includes('已导出为图片故事板')), warnings.join('\n'));
 }
 
 console.log('=== SPECIALS TESTS PASSED ===');

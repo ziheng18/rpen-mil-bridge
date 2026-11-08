@@ -637,7 +637,7 @@ export function exportMilthmChart(chart, settings = {}) {
         if (Number(line?.father ?? -1) !== -1) warnings.push(`线 ${lineIndex}：${textLine ? '文本线' : '贴图线'}的父子线（father）在故事板中无法表达，位置按自身事件导出`);
         continue; // the line itself is not a Milthm track
       }
-      warnings.push(`线 ${lineIndex}：${textLine ? '文本线' : '贴图线'}带有 ${noteCount} 个音符，线仍按轨道导出（渲染器里线体也会显示）`);
+      warnings.push(`线 ${lineIndex}：${textLine ? '文本线' : '贴图线'}带有 ${noteCount} 个音符：音符仍按轨道导出，${textLine ? '文本' : '贴图'}同时导出为故事板`);
     }
 
     const notes = [];
@@ -911,9 +911,9 @@ export function normalizeLaneChart(chart, settings = {}) {
     if (Number(line.bpmfactor ?? 1) !== 1) { linePatch.bpmfactor = 1; lineChanged = true; }
     // `father` is deliberately NOT reset: RPEN keeps the hierarchy for preview/editing and
     // export bakes it into absolute keyframes (flatten.mjs), with a warning when it happens.
-    // Track lines keep the default line texture; note-less lines may keep a custom texture,
-    // which the preview draws natively and the export converts into a picture storyboard.
-    if (line.Texture && line.Texture !== 'line.png' && (line.notes ?? []).length > 0) { linePatch.Texture = 'line.png'; lineChanged = true; }
+    // `Texture` is deliberately NOT reset either (v0.7.20): a custom judgement-line texture is a
+    // supported visual on Milthm charts too — the preview draws it natively and the export turns
+    // it into a picture storyboard (convert.mjs specials), including on lines that carry notes.
     let notes = line.notes;
     if (Array.isArray(line.notes)) {
       let notesChanged = false;

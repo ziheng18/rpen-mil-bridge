@@ -1,0 +1,149 @@
+{
+  "steps": [
+    {
+      "name": "mod",
+      "data": {
+        "loaded": "loaded",
+        "version": "0.7.20"
+      }
+    },
+    {
+      "name": "commit",
+      "data": {
+        "lineIndex": 1,
+        "noteCount": 89,
+        "texture": "probe-line.png",
+        "kept": true,
+        "descriptor": {
+          "width": 400,
+          "height": 400
+        }
+      }
+    },
+    {
+      "name": "drawLine",
+      "data": {
+        "previewKind": "realtimePreview",
+        "lineIndex": 1,
+        "texture": "probe-line.png",
+        "error": null,
+        "redPixels": 40000
+      }
+    },
+    {
+      "name": "preview",
+      "data": {
+        "visible": true,
+        "width": 300,
+        "height": 150
+      }
+    },
+    {
+      "name": "export-json",
+      "data": {
+        "file": "Class Memories.json",
+        "warnings": [
+          "线 1：贴图线带有 89 个音符：音符仍按轨道导出，贴图同时导出为故事板",
+          "线 1：判定线贴图「probe-line.png」已导出为图片故事板（type 0）；谱面包 zip 会自动打包到 res/probe-line.png，单独导出 chart.json 时需自备该图片"
+        ],
+        "pictureStoryboards": 1,
+        "pictureAnimations": 153,
+        "trackStillExported": true,
+        "storyboardTotal": 1
+      }
+    },
+    {
+      "name": "export-zip",
+      "data": {
+        "file": "Class Memories.zip",
+        "entries": 5,
+        "textureInRes": true,
+        "textureIsPng": true,
+        "warnings": []
+      }
+    }
+  ],
+  "exceptions": [],
+  "downloads": [
+    "Class Memories.json",
+    "Class Memories.zip"
+  ],
+  "result": {
+    "ok": true,
+    "textureKept": true,
+    "descriptor": {
+      "width": 400,
+      "height": 400
+    },
+    "drawLineError": null,
+    "drawLineRedPixels": 40000,
+    "pictureStoryboards": 1,
+    "trackStillExported": true,
+    "textureInRes": true,
+    "textureIsPng": true,
+    "steps": [
+      {
+        "name": "mod",
+        "data": {
+          "loaded": "loaded",
+          "version": "0.7.20"
+        }
+      },
+      {
+        "name": "commit",
+        "data": {
+          "lineIndex": 1,
+          "noteCount": 89,
+          "texture": "probe-line.png",
+          "kept": true,
+          "descriptor": {
+            "width": 400,
+            "height": 400
+          }
+        }
+      },
+      {
+        "name": "drawLine",
+        "data": {
+          "previewKind": "realtimePreview",
+          "lineIndex": 1,
+          "texture": "probe-line.png",
+          "error": null,
+          "redPixels": 40000
+        }
+      },
+      {
+        "name": "preview",
+        "data": {
+          "visible": true,
+          "width": 300,
+          "height": 150
+        }
+      },
+      {
+        "name": "export-json",
+        "data": {
+          "file": "Class Memories.json",
+          "warnings": [
+            "线 1：贴图线带有 89 个音符：音符仍按轨道导出，贴图同时导出为故事板",
+            "线 1：判定线贴图「probe-line.png」已导出为图片故事板（type 0）；谱面包 zip 会自动打包到 res/probe-line.png，单独导出 chart.json 时需自备该图片"
+          ],
+          "pictureStoryboards": 1,
+          "pictureAnimations": 153,
+          "trackStillExported": true,
+          "storyboardTotal": 1
+        }
+      },
+      {
+        "name": "export-zip",
+        "data": {
+          "file": "Class Memories.zip",
+          "entries": 5,
+          "textureInRes": true,
+          "textureIsPng": true,
+          "warnings": []
+        }
+      }
+    ]
+  }
+}
