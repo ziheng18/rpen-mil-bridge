@@ -4,7 +4,7 @@
       "name": "mod",
       "data": {
         "loaded": "loaded",
-        "version": "0.7.21"
+        "version": "0.7.22"
       }
     },
     {
@@ -29,9 +29,9 @@
           "x": 82.9,
           "y": 51.824000000000005,
           "radius": 25.596,
-          "barWidth": 7,
-          "barHeight": 19.276,
-          "gap": 7
+          "barWidth": 4.86324,
+          "barHeight": 30.7152,
+          "gap": 5.37516
         },
         "scorePosition": {
           "x": 956.1028,
@@ -75,9 +75,9 @@
           "x": 82.9,
           "y": 51.824000000000005,
           "radius": 25.596,
-          "barWidth": 7,
-          "barHeight": 19.276,
-          "gap": 7
+          "barWidth": 4.86324,
+          "barHeight": 30.7152,
+          "gap": 5.37516
         },
         "scorePosition": {
           "x": 956.1028,
@@ -108,7 +108,7 @@
   ],
   "exceptions": [],
   "result": {
-    "version": "0.7.21",
+    "version": "0.7.22",
     "title": "Class Memories",
     "level": "Cloudburst 8",
     "score": "0208138",
@@ -129,6 +129,10 @@
     "exceptions": 0,
     "pauseRatio": 0.081,
     "pauseRatioOk": true,
+    "pauseBarWidthRatio": 0.19,
+    "pauseBarHeightRatio": 1.2,
+    "pauseGapRatio": 0.21,
+    "pauseShapeOk": true,
     "ok": true
   }
 }

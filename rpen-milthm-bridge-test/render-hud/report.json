@@ -4,7 +4,7 @@
       "name": "mod",
       "data": {
         "loaded": "loaded",
-        "version": "0.7.21"
+        "version": "0.7.22"
       }
     },
     {
@@ -33,9 +33,9 @@
             "x": 48,
             "y": 44.28,
             "radius": 21.87,
-            "barWidth": 7,
-            "barHeight": 16.47,
-            "gap": 7
+            "barWidth": 4.1553,
+            "barHeight": 26.244,
+            "gap": 4.5927
           },
           "scorePosition": {
             "x": 932.256,
@@ -73,6 +73,10 @@
     "hudLitPixels": 1285,
     "hudTitle": "Class Memories",
     "hudCombo": 5,
+    "pauseBarWidthRatio": 0.19,
+    "pauseBarHeightRatio": 1.2,
+    "pauseGapRatio": 0.21,
+    "pauseShapeOk": true,
     "stockHudForRpe": true,
     "renderPanelOpened": true,
     "steps": [
@@ -80,7 +84,7 @@
         "name": "mod",
         "data": {
           "loaded": "loaded",
-          "version": "0.7.21"
+          "version": "0.7.22"
         }
       },
       {
@@ -109,9 +113,9 @@
               "x": 48,
               "y": 44.28,
               "radius": 21.87,
-              "barWidth": 7,
-              "barHeight": 16.47,
-              "gap": 7
+              "barWidth": 4.1553,
+              "barHeight": 26.244,
+              "gap": 4.5927
             },
             "scorePosition": {
               "x": 932.256,

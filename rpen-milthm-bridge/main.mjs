@@ -500,9 +500,12 @@ export async function activate(api) {
     const centerX = atX(0.050);
     const centerY = atY(0.082);
     const radius = size(0.0405);
-    const barWidth = size(0.0062);
-    const barHeight = size(0.0305);
-    const gap = size(0.007);
+    // Pause bars are sized relative to the circle, not via size(): that helper has a 7px floor for
+    // tiny previews (render-studio panel), which made the bars short and fat there. A real pause
+    // icon keeps ~60% of the diameter in height and ~10% in width at every scale.
+    const barWidth = Math.max(1.5, radius * 0.19);
+    const barHeight = Math.max(4, radius * 1.2);
+    const gap = Math.max(2, radius * 0.21);
     context.globalAlpha = 0.55;
     context.fillStyle = '#ffffff';
     context.beginPath();

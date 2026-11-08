@@ -121,12 +121,19 @@ try {
   result.hudLitPixels = Number(hudStep.litPixels ?? 0);
   result.hudTitle = hudStep.hud?.title ?? null;
   result.hudCombo = hudStep.hud?.combo ?? null;
+  const pause = hudStep.hud?.pause ?? {};
+  result.pauseBarWidthRatio = pause.radius ? Number((pause.barWidth / pause.radius).toFixed(3)) : null;
+  result.pauseBarHeightRatio = pause.radius ? Number((pause.barHeight / pause.radius).toFixed(3)) : null;
+  result.pauseGapRatio = pause.radius ? Number((pause.gap / pause.radius).toFixed(3)) : null;
+  result.pauseShapeOk = Math.abs(Number(result.pauseBarWidthRatio ?? 0) - 0.19) <= 0.02
+    && Math.abs(Number(result.pauseBarHeightRatio ?? 0) - 1.2) <= 0.06
+    && Math.abs(Number(result.pauseGapRatio ?? 0) - 0.21) <= 0.02;
   result.stockHudForRpe = Boolean(passStep.stockHudCalled) && !passStep.error;
   result.renderPanelOpened = Boolean(panelStep.open);
   const normalizedTitle = String(result.hudTitle ?? '').replace(/\s+/g, ' ').trim(); // the chart title uses a NBSP
   result.ok = result.patchInstalled && !result.hudError && result.hudLitPixels > 1000
     && normalizedTitle === 'Class Memories' && result.hudCombo === 5
-    && result.stockHudForRpe && exceptions.length === 0;
+    && result.stockHudForRpe && result.pauseShapeOk && exceptions.length === 0;
   result.steps = report.steps;
 } catch (error) {
   console.log('FAILED', String(error?.stack ?? error));
