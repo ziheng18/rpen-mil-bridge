@@ -491,6 +491,7 @@ export async function activate(api) {
     const showLevel = showTitle && (!ui || ui.showChartLevel !== false);
     const showComboUi = !ui || ui.showCombo !== false;
     const showProgress = !ui || ui.showProgress !== false;
+    const watermark = ui && typeof ui.watermark === 'string' ? ui.watermark.trim().slice(0, 40) : '';
     const duration = Math.max(0.001, Number(durationOverride ?? preview.duration) || 600);
     const progress = Math.max(0, Math.min(1, (seconds + (Number(chart.META?.offset) || 0) / 1000) / duration));
     const times = preview.completionTimes ?? [];
@@ -579,6 +580,22 @@ export async function activate(api) {
       context.fillText(String(combo), atX(0.5), atY(0.122));
     }
     context.restore();
+    // Render-studio watermark (settings.watermark): the stock render HUD draws it centred at the
+    // bottom of the frame (26/1623 of the frame height, 70% alpha); do the same here. The editor
+    // preview passes no render settings, so it never shows a watermark.
+    if (watermark) {
+      const frameWidth = Number(frame?.width) > 0 ? Number(frame.width) : width;
+      const frameHeight = Number(frame?.height) > 0 ? Number(frame.height) : height;
+      const unit = frameHeight / 1623;
+      context.save();
+      context.globalAlpha = 0.7;
+      context.fillStyle = 'rgba(255,255,255,.8)';
+      context.font = `400 ${Math.max(10, 26 * unit)}px RPEGame, sans-serif`;
+      context.textAlign = 'center';
+      context.textBaseline = 'alphabetic';
+      context.fillText(watermark, frameWidth / 2, frameHeight - 22 * unit);
+      context.restore();
+    }
     preview.__milthmHud = {
       title: showTitle ? title : null,
       level: showLevel ? (level || null) : null,
@@ -586,6 +603,7 @@ export async function activate(api) {
       visible: { pause: showPause, title: showTitle, level: showLevel, score: true, combo: showComboUi, progress: showProgress },
       allPerfect: showComboUi && combo >= 3 ? (comboCaption || null) : null,
       comboCaption,
+      watermark: watermark || null,
       seconds,
       firstCompletion: times[0] ?? null,
       lastCompletion: times[times.length - 1] ?? null,

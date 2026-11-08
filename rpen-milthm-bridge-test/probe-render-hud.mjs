@@ -145,7 +145,36 @@ try {
     };
   })()`));
 
-  // 5) non-Milthm chart -> stock autoplay HUD path (states empty -> stock returns early)
+  // 5) the render setting "水印文案" (settings.watermark) is drawn like the stock render HUD
+  step('watermark', await evaluate(`(async () => {
+    const { AutoplayScene } = await import('/src/ui/render-studio/renderer.mjs');
+    const editor = window.rpenMods.editor;
+    const draw = (watermark) => {
+      const scene = Object.create(AutoplayScene.prototype);
+      scene.chart = editor.chart;
+      scene.hudEnabled = true;
+      scene.project = { duration: 100 };
+      scene.preview = { completionTimes: [1, 2, 3, 4, 5], duration: 100 };
+      scene.settings = { autoplayText: '', watermark };
+      const canvas = document.createElement('canvas'); canvas.width = 960; canvas.height = 540;
+      const context = canvas.getContext('2d');
+      context.fillStyle = '#000'; context.fillRect(0, 0, 960, 540);
+      const frame = { width: 960, height: 540, viewport: { left: 0, top: 0, width: 960, height: 540 }, scale: 960 / 1350, states: [{}] };
+      scene.paintHud(context, frame, 10);
+      const data = context.getImageData(0, 0, 960, 540).data;
+      let lit = 0;
+      for (let index = 0; index < data.length; index += 4) if (data[index] > 40 || data[index + 1] > 40 || data[index + 2] > 40) lit += 1;
+      return { watermark: scene.preview.__milthmHud?.watermark ?? null, lit, image: canvas.toDataURL('image/png') };
+    };
+    return { custom: draw('MY WATERMARK'), blank: draw(''), absent: draw(undefined) };
+  })()`));
+
+  const watermarkImages = report.steps.find(item => item.name === 'watermark')?.data ?? {};
+  if (watermarkImages.custom?.image) {
+    fs.writeFileSync(path.join(OUT, 'watermark.png'), Buffer.from(String(watermarkImages.custom.image).split(',')[1], 'base64'));
+  }
+
+  // 6) non-Milthm chart -> stock autoplay HUD path (states empty -> stock returns early)
   step('rpe-passthrough', await evaluate(`(async () => {
     const { AutoplayScene } = await import('/src/ui/render-studio/renderer.mjs');
     const editor = window.rpenMods.editor;
@@ -180,6 +209,7 @@ try {
   const passStep = report.steps.find(item => item.name === 'rpe-passthrough')?.data ?? {};
   const captionStep = report.steps.find(item => item.name === 'caption-setting')?.data ?? {};
   const toggleStep = report.steps.find(item => item.name === 'ui-toggles')?.data ?? {};
+  const watermarkStep = report.steps.find(item => item.name === 'watermark')?.data ?? {};
   const panelStep = report.steps.find(item => item.name === 'render-panel')?.data ?? {};
   result.patchInstalled = Boolean(patchStep.patched);
   result.hudError = hudStep.error ?? null;
@@ -208,6 +238,12 @@ try {
     nameOff: toggleStep.nameOff?.visible ?? null,
     levelOff: toggleStep.levelOff?.visible ?? null,
   };
+  result.watermarkCustom = watermarkStep.custom?.watermark ?? null;
+  result.watermarkBlank = watermarkStep.blank?.watermark ?? null;
+  result.watermarkAbsent = watermarkStep.absent?.watermark ?? null;
+  result.watermarkOk = result.watermarkCustom === 'MY WATERMARK'
+    && result.watermarkBlank === null && result.watermarkAbsent === null
+    && Number(watermarkStep.custom?.lit ?? 0) > Number(watermarkStep.blank?.lit ?? 0);
   result.uiTogglesOk = Boolean(
     toggleStep.allOn?.visible?.pause && toggleStep.allOn?.visible?.title && toggleStep.allOn?.visible?.level
     && toggleStep.allOff && ['pause', 'title', 'level', 'combo', 'progress'].every(key => toggleStep.allOff.visible[key] === false)
@@ -226,7 +262,7 @@ try {
   const normalizedTitle = String(result.hudTitle ?? '').replace(/\s+/g, ' ').trim(); // the chart title uses a NBSP
   result.ok = result.patchInstalled && !result.hudError && result.hudLitPixels > 1000
     && normalizedTitle === 'Class Memories' && result.hudCombo === 5
-    && result.stockHudForRpe && result.pauseShapeOk && result.captionSettingOk && result.uiTogglesOk && exceptions.length === 0;
+    && result.stockHudForRpe && result.pauseShapeOk && result.captionSettingOk && result.uiTogglesOk && result.watermarkOk && exceptions.length === 0;
   result.steps = report.steps;
 } catch (error) {
   console.log('FAILED', String(error?.stack ?? error));

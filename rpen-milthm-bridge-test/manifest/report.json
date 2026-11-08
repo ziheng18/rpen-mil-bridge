@@ -1,6 +1,6 @@
 {
   "result": {
-    "version": "0.7.25",
+    "version": "0.7.26",
     "loaded": "loaded",
     "nameZh": "Milthm 自制谱桥接",
     "nameEn": "Milthm fmt=2 Bridge",
@@ -11,7 +11,7 @@
     "enLength": 622,
     "zh": "在 RPEN 中导入 / 编辑 / 导出 Milthm 自制谱（fmt=2）：每条 Milthm 线映射成一条轨道，原生 5 个事件列可切换为 Milthm 语义（X/Y/旋转/线体·线头·整体不透明度/流速倍率/轨道大小），预览按 Milthm 轨道样式与渲染器流速公式绘制，未编辑的谱面导出与源谱 0 diff。RPEN 表达不了的 Milthm 数据（噪域、着色器、GIF、表达式缓动、音符级动画等）原样暂存，导出时提示损失。判定线贴图可自由更换，导出时自动转成图片故事板。渲染面板与视频导出的 HUD 也按 Milthm 样式绘制。",
     "mentionsVersions": false,
-    "expectedVersion": "0.7.25",
+    "expectedVersion": "0.7.26",
     "expectedAuthor": "ziheng",
     "maxZh": 400,
     "maxEn": 900,
@@ -19,7 +19,7 @@
     "ok": true
   },
   "info": {
-    "version": "0.7.25",
+    "version": "0.7.26",
     "loaded": "loaded",
     "nameZh": "Milthm 自制谱桥接",
     "nameEn": "Milthm fmt=2 Bridge",
