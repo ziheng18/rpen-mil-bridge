@@ -900,6 +900,9 @@ export function exportMilthmChart(chart, settings = {}) {
 export function normalizeLaneChart(chart, settings = {}) {
   const cfg = normalizeSettings(settings);
   if (!cfg.laneLock || !chart || !Array.isArray(chart.judgeLineList)) return chart;
+  // The lane lock is a Milthm track invariant. Charts that did not come from the fmt=2 importer
+  // are ordinary RPE charts and must keep their free note X/above, textures and bpmfactor.
+  if (chart['x-milthm']?.kind !== 'milthm-fmt2') return chart;
   let chartChanged = false;
   const judgeLineList = chart.judgeLineList.map(line => {
     if (!line || typeof line !== 'object') return line;

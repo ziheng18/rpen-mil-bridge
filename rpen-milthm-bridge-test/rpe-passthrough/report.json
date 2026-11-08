@@ -1,0 +1,69 @@
+{
+  "steps": [
+    {
+      "name": "mod",
+      "data": {
+        "loaded": "loaded",
+        "version": "0.7.19"
+      }
+    },
+    {
+      "name": "chart",
+      "data": {
+        "path": "editor.chart",
+        "lines": 1,
+        "milthm": false,
+        "name": "未命名谱面"
+      }
+    },
+    {
+      "name": "commit",
+      "data": {
+        "before": {
+          "bpmfactor": 1,
+          "texture": "line.png"
+        },
+        "after": {
+          "bpmfactor": 0.75,
+          "texture": "probe-texture.png",
+          "positionX": 123,
+          "above": -1
+        },
+        "kept": {
+          "bpmfactor": true,
+          "texture": true,
+          "positionX": true,
+          "above": true
+        }
+      }
+    },
+    {
+      "name": "preview",
+      "data": {
+        "visible": true,
+        "width": 300,
+        "height": 150
+      }
+    }
+  ],
+  "exceptions": [],
+  "ok": true,
+  "result": {
+    "before": {
+      "bpmfactor": 1,
+      "texture": "line.png"
+    },
+    "after": {
+      "bpmfactor": 0.75,
+      "texture": "probe-texture.png",
+      "positionX": 123,
+      "above": -1
+    },
+    "kept": {
+      "bpmfactor": true,
+      "texture": true,
+      "positionX": true,
+      "above": true
+    }
+  }
+}

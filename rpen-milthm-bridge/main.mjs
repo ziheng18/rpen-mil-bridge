@@ -659,6 +659,9 @@ export async function activate(api) {
   /* ---------------- lane lock on every commit ---------------- */
   api.hook('session:before-commit', change => {
     if (!change || !change.chart) return;
+    // Milthm-only invariants: a normal RPE chart is free-form (note X/above, line textures,
+    // bpmfactor, extended event layers...) and must stay untouched while the mod is enabled.
+    if (!isMilthmChart(change.chart)) return;
     // Lines added to a Milthm chart arrive as plain RPE lines. Give them the Milthm stash in
     // the same commit; otherwise ensureChartColumns() would keep reporting "needs init" after
     // every commit and the auto-initialise commit would loop forever.
