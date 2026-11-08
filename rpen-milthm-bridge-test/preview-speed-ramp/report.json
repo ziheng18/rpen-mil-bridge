@@ -4,7 +4,7 @@
       "name": "mod",
       "data": {
         "loaded": "loaded",
-        "version": "0.7.14"
+        "version": "0.7.17"
       }
     },
     {
@@ -134,7 +134,7 @@
   ],
   "exceptions": [],
   "result": {
-    "version": "0.7.14",
+    "version": "0.7.17",
     "speedPrimaryOk": true,
     "flatBeforeJumpOk": true,
     "flatBeforeJumpDetail": [

@@ -39,3 +39,6 @@ rpen-milthm-bridge-test/out/
 *.rpenmod
 /analyze/crop*.png
 /analyze/detail_rpen_fmt2.txt
+
+# 官方拆包谱面 / 临时 JSON：仅本地，不进入仓库
+/*.json

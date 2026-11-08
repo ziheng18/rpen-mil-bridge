@@ -24,7 +24,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const RPE_DIR = path.join(here, 'rpe-next');
+const RPE_DIR = process.env.RPEN_DIR ? path.resolve(process.env.RPEN_DIR) : path.join(here, 'rpe-next');
 const LOCALE_FILES = {
   'zh-CN': path.join(RPE_DIR, 'src', 'locales', 'zh-CN.mjs'),
   'en-US': path.join(RPE_DIR, 'src', 'locales', 'en-US.mjs'),

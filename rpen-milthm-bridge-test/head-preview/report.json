@@ -4,7 +4,7 @@
       "name": "mod",
       "data": {
         "loaded": "loaded",
-        "version": "0.7.12"
+        "version": "0.7.17"
       }
     },
     {
@@ -12,9 +12,9 @@
       "data": {
         "canvas": {
           "width": 819,
-          "height": 460
+          "height": 426
         },
-        "viewScale": 0.5111111111111111,
+        "viewScale": 0.47333333333333333,
         "line1": {
           "scaleX": 1,
           "alpha": 255
@@ -24,8 +24,8 @@
   ],
   "exceptions": [],
   "result": {
-    "version": "0.7.12",
-    "previewScale": 0.5111111111111111,
+    "version": "0.7.17",
+    "previewScale": 0.47333333333333333,
     "exceptions": 0,
     "ok": true
   }

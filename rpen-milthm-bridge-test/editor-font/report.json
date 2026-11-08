@@ -15,10 +15,11 @@
       "name": "mod",
       "data": {
         "loaded": "loaded",
-        "version": "0.7.12",
+        "version": "0.7.17",
         "files": [
           "columns.mjs",
           "convert.mjs",
+          "flatten.mjs",
           "fonts/ChillRoundF.ttf",
           "fonts/FONT-NOTICE.txt",
           "fonts/OFL.txt",
@@ -102,7 +103,7 @@
   ],
   "exceptions": [],
   "result": {
-    "version": "0.7.12",
+    "version": "0.7.17",
     "fontInPackage": true,
     "licenseInPackage": true,
     "defaultSetting": true,

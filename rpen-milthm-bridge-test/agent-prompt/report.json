@@ -3,7 +3,7 @@
     {
       "name": "default-prompt",
       "data": {
-        "length": 9675,
+        "length": 9853,
         "hit": "Milthm 轨道式谱面",
         "laneLock": true,
         "xMilthm": true,
@@ -43,7 +43,7 @@
             "customLengthListed": false
           }
         ],
-        "currentLength": 9675
+        "currentLength": 9853
       }
     },
     {
@@ -53,13 +53,13 @@
         "configureFound": true,
         "dialogOpen": true,
         "hasPrompt": true,
-        "promptLength": 9626
+        "promptLength": 9803
       }
     }
   ],
   "exceptions": [],
   "result": {
-    "promptLength": 9675,
+    "promptLength": 9853,
     "marker": "Milthm 轨道式谱面",
     "hasLaneLock": true,
     "hasXMilthm": true,

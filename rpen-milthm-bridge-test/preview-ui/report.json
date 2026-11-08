@@ -4,7 +4,7 @@
       "name": "mod",
       "data": {
         "loaded": "loaded",
-        "version": "0.7.12"
+        "version": "0.7.17"
       }
     },
     {
@@ -108,7 +108,7 @@
   ],
   "exceptions": [],
   "result": {
-    "version": "0.7.12",
+    "version": "0.7.17",
     "title": "Class Memories",
     "level": "Cloudburst 8",
     "score": "0208138",
