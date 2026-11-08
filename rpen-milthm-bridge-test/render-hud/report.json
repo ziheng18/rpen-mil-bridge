@@ -4,7 +4,7 @@
       "name": "mod",
       "data": {
         "loaded": "loaded",
-        "version": "0.7.22"
+        "version": "0.7.23"
       }
     },
     {
@@ -32,10 +32,10 @@
           "pause": {
             "x": 48,
             "y": 44.28,
-            "radius": 21.87,
-            "barWidth": 4.1553,
-            "barHeight": 26.244,
-            "gap": 4.5927
+            "radius": 19.116,
+            "barWidth": 3.8232,
+            "barHeight": 12.80772,
+            "gap": 4.49226
           },
           "scorePosition": {
             "x": 932.256,
@@ -73,9 +73,9 @@
     "hudLitPixels": 1285,
     "hudTitle": "Class Memories",
     "hudCombo": 5,
-    "pauseBarWidthRatio": 0.19,
-    "pauseBarHeightRatio": 1.2,
-    "pauseGapRatio": 0.21,
+    "pauseBarWidthRatio": 0.2,
+    "pauseBarHeightRatio": 0.67,
+    "pauseGapRatio": 0.235,
     "pauseShapeOk": true,
     "stockHudForRpe": true,
     "renderPanelOpened": true,
@@ -84,7 +84,7 @@
         "name": "mod",
         "data": {
           "loaded": "loaded",
-          "version": "0.7.22"
+          "version": "0.7.23"
         }
       },
       {
@@ -112,10 +112,10 @@
             "pause": {
               "x": 48,
               "y": 44.28,
-              "radius": 21.87,
-              "barWidth": 4.1553,
-              "barHeight": 26.244,
-              "gap": 4.5927
+              "radius": 19.116,
+              "barWidth": 3.8232,
+              "barHeight": 12.80772,
+              "gap": 4.49226
             },
             "scorePosition": {
               "x": 932.256,

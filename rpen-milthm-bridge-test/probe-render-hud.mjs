@@ -125,9 +125,10 @@ try {
   result.pauseBarWidthRatio = pause.radius ? Number((pause.barWidth / pause.radius).toFixed(3)) : null;
   result.pauseBarHeightRatio = pause.radius ? Number((pause.barHeight / pause.radius).toFixed(3)) : null;
   result.pauseGapRatio = pause.radius ? Number((pause.gap / pause.radius).toFixed(3)) : null;
-  result.pauseShapeOk = Math.abs(Number(result.pauseBarWidthRatio ?? 0) - 0.19) <= 0.02
-    && Math.abs(Number(result.pauseBarHeightRatio ?? 0) - 1.2) <= 0.06
-    && Math.abs(Number(result.pauseGapRatio ?? 0) - 0.21) <= 0.02;
+  // Official reference ratios (bar width / radius, bar height / radius, gap / radius)
+  result.pauseShapeOk = Math.abs(Number(result.pauseBarWidthRatio ?? 0) - 0.20) <= 0.03
+    && Math.abs(Number(result.pauseBarHeightRatio ?? 0) - 0.67) <= 0.06
+    && Math.abs(Number(result.pauseGapRatio ?? 0) - 0.235) <= 0.03;
   result.stockHudForRpe = Boolean(passStep.stockHudCalled) && !passStep.error;
   result.renderPanelOpened = Boolean(panelStep.open);
   const normalizedTitle = String(result.hudTitle ?? '').replace(/\s+/g, ' ').trim(); // the chart title uses a NBSP

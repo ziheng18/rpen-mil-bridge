@@ -122,13 +122,14 @@ try {
   };
   // reference proportions: pause diameter ≈ 7.1% of the preview height, combo ≈ 4.9% font
   result.pauseRatio = height ? Number(((late?.pause?.radius * 2) / height).toFixed(4)) : null;
-  result.pauseRatioOk = Math.abs(Number(result.pauseRatio ?? 0) - 0.081) <= 0.012;
+  result.pauseRatioOk = Math.abs(Number(result.pauseRatio ?? 0) - 0.0708) <= 0.008;
   result.pauseBarWidthRatio = late?.pause?.radius ? Number((late.pause.barWidth / late.pause.radius).toFixed(3)) : null;
   result.pauseBarHeightRatio = late?.pause?.radius ? Number((late.pause.barHeight / late.pause.radius).toFixed(3)) : null;
   result.pauseGapRatio = late?.pause?.radius ? Number((late.pause.gap / late.pause.radius).toFixed(3)) : null;
-  result.pauseShapeOk = Math.abs(Number(result.pauseBarWidthRatio ?? 0) - 0.19) <= 0.02
-    && Math.abs(Number(result.pauseBarHeightRatio ?? 0) - 1.2) <= 0.06
-    && Math.abs(Number(result.pauseGapRatio ?? 0) - 0.21) <= 0.02;
+  // Official reference ratios (bar width / radius, bar height / radius, gap / radius)
+  result.pauseShapeOk = Math.abs(Number(result.pauseBarWidthRatio ?? 0) - 0.20) <= 0.03
+    && Math.abs(Number(result.pauseBarHeightRatio ?? 0) - 0.67) <= 0.06
+    && Math.abs(Number(result.pauseGapRatio ?? 0) - 0.235) <= 0.03;
   result.ok = result.titleOk && result.levelOk && result.scoreOk && result.accuracyOk && result.comboOk
     && result.allPerfectOk && result.earlyComboZero && result.earlyNoAllPerfect
     && result.pauseRingLighterThanHoles && result.pauseRatioOk && result.pauseShapeOk && result.exceptions === 0;

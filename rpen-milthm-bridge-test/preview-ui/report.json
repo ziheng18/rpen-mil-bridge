@@ -4,7 +4,7 @@
       "name": "mod",
       "data": {
         "loaded": "loaded",
-        "version": "0.7.22"
+        "version": "0.7.23"
       }
     },
     {
@@ -28,10 +28,10 @@
         "pause": {
           "x": 82.9,
           "y": 51.824000000000005,
-          "radius": 25.596,
-          "barWidth": 4.86324,
-          "barHeight": 30.7152,
-          "gap": 5.37516
+          "radius": 22.3728,
+          "barWidth": 4.47456,
+          "barHeight": 14.989776000000003,
+          "gap": 5.257608
         },
         "scorePosition": {
           "x": 956.1028,
@@ -39,9 +39,9 @@
         },
         "referenceHeight": 632,
         "ringPixel": [
-          149,
-          148,
-          147,
+          90,
+          89,
+          88,
           255
         ],
         "holePixel": [
@@ -50,7 +50,7 @@
           16,
           255
         ],
-        "ringLum": 444,
+        "ringLum": 267,
         "holeLum": 52,
         "canvas": {
           "width": 1019,
@@ -74,10 +74,10 @@
         "pause": {
           "x": 82.9,
           "y": 51.824000000000005,
-          "radius": 25.596,
-          "barWidth": 4.86324,
-          "barHeight": 30.7152,
-          "gap": 5.37516
+          "radius": 22.3728,
+          "barWidth": 4.47456,
+          "barHeight": 14.989776000000003,
+          "gap": 5.257608
         },
         "scorePosition": {
           "x": 956.1028,
@@ -85,9 +85,9 @@
         },
         "referenceHeight": 632,
         "ringPixel": [
-          149,
-          148,
-          147,
+          90,
+          89,
+          88,
           255
         ],
         "holePixel": [
@@ -96,7 +96,7 @@
           16,
           255
         ],
-        "ringLum": 444,
+        "ringLum": 267,
         "holeLum": 52,
         "canvas": {
           "width": 1019,
@@ -108,7 +108,7 @@
   ],
   "exceptions": [],
   "result": {
-    "version": "0.7.22",
+    "version": "0.7.23",
     "title": "Class Memories",
     "level": "Cloudburst 8",
     "score": "0208138",
@@ -127,11 +127,11 @@
     "earlyNoAllPerfect": true,
     "pauseRingLighterThanHoles": true,
     "exceptions": 0,
-    "pauseRatio": 0.081,
+    "pauseRatio": 0.0708,
     "pauseRatioOk": true,
-    "pauseBarWidthRatio": 0.19,
-    "pauseBarHeightRatio": 1.2,
-    "pauseGapRatio": 0.21,
+    "pauseBarWidthRatio": 0.2,
+    "pauseBarHeightRatio": 0.67,
+    "pauseGapRatio": 0.235,
     "pauseShapeOk": true,
     "ok": true
   }
