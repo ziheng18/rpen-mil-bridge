@@ -20,6 +20,13 @@ const DIM_TYPE = 'background-dim';
 const DIM_TYPE_ID = `${MOD_ID}/${DIM_TYPE}`;
 const EASE_PRESS_NAMES = ['线性', 'Sine', 'Quad', 'Cubic', 'Quart', 'Quint', 'Expo', 'Circ', 'Back', 'Elastic', 'Bounce'];
 const EASE_TYPE_NAMES = ['In', 'Out', 'InOut'];
+// RPEN's editor preview painted its background image at this alpha by default (migrated from the old
+// RPE "background transparency" setting, 60/255 ≈ 0.2353; 0.14 no longer exposes a slider for it).
+// For Milthm charts the bridge draws the cover fully and dims it with a black overlay, so that
+// setting no longer darkens anything; its default brightness (1 - 60/255 ≈ 76.5%) becomes the
+// default value of the background-dim global event.
+const RPEN_PREVIEW_BACKGROUND_ALPHA = 60 / 255;
+const DEFAULT_DIM_PERCENT = Math.round((1 - RPEN_PREVIEW_BACKGROUND_ALPHA) * 100); // 76
 const CHANNEL_DEFS = {
   'line-body-alpha': { label: '线体不透明度', hint: 'Milthm LineBodyTransparency(8)：只影响轨道线身' },
   'line-head-alpha': { label: '线头不透明度', hint: 'Milthm LineHeadTransparency(9)：只影响轨道线头/判定圈（可分开控制）' },
@@ -27,7 +34,7 @@ const CHANNEL_DEFS = {
   'line-flow-speed': { label: '流速倍率', hint: 'Milthm FlowSpeed(5)：视觉流速倍率' },
   'line-size': { label: '轨道大小', hint: 'Milthm Size(3)：同时作用于线体与音符（对应 RPEN 缩放X/缩放Y，两者保持同步）' },
   'note-alpha': { label: '音符不透明度', hint: 'Milthm 音符级 Transparency(2)：作用于当前选中的音符' },
-  'background-dim': { label: '背景明暗（全局事件）', hint: 'Milthm 纯黑立绘的不透明度：0=原图，1=纯黑；用全局事件时间轴编辑' },
+  'background-dim': { label: '背景明暗（全局事件）', hint: 'Milthm 背景曲绘明暗：0=原曲绘，100=全黑；没有事件时默认取谱面 background_dim' },
 };
 const CHANNEL_KEYS = { 'line-body-alpha': 'bodyAlpha', 'line-head-alpha': 'headAlpha', 'line-whole-alpha': 'wholeAlpha', 'line-flow-speed': 'flowSpeed' };
 const PANEL_STYLE = `
@@ -107,12 +114,14 @@ export async function activate(api) {
     files: await api.importInternal('platform/files.mjs').catch(() => null),
     multiEdit: await api.importInternal('application/multi-edit.mjs').catch(() => null),
     multiLine: await api.importInternal('ui/multi-line.mjs').catch(() => null),
+    guides: await api.importInternal('core/preview-guides.mjs').catch(() => null),
   };
   const { TempoMap } = internals.tempo;
   const { EventTrack } = internals.events;
   const { Preview } = internals.preview;
   const { SceneRuntime, LineRuntime } = internals.scene;
   const { formatBeat, parseBeat, fromNumber } = internals.beat;
+  const { mergeGuides, formatLineNumbers } = internals.guides ?? {};
 
   let lastWarnings = [];
   const settings = () => {
@@ -133,6 +142,16 @@ export async function activate(api) {
   };
   const previewFlowMultiplier = () => rendererFlowSpeed() / RENDERER_FLOW_SPEED;
   const isMilthmChart = chart => chart?.['x-milthm']?.kind === 'milthm-fmt2';
+  // Background dim: Milthm's `meta.background_dim` is the fixed darkness the official player applies
+  // to the cover (RPU GameMain.cs `chartDimMask.color.a = chart.meta.background_dim`). The mod's global
+  // event is a 0-100 percentage of the *total* darkness (0 = original artwork, 100 = black), so a
+  // chart without dim events falls back to its own background_dim.
+  const chartBackgroundDim = chart => {
+    const value = Number(chart?.['x-milthm']?.meta?.background_dim);
+    return Number.isFinite(value) ? clamp01(value) : 0.6;
+  };
+  const dimIsPercent = chart => chart?.['x-milthm']?.dimUnit === 'percent';
+  const dimFraction = (chart, value) => clamp01(Number(value) / (dimIsPercent(chart) ? 100 : 1));
   const reportWarnings = (label, warnings) => {
     const unique = [...new Set(warnings ?? [])];
     if (!unique.length) return;
@@ -149,9 +168,11 @@ export async function activate(api) {
     api.globalEvents.register({
       id: DIM_TYPE,
       name: dimTypeName(),
-      description: 'Milthm 背景明暗（由 Milthm 纯黑立绘 storyboard 实现）：0=背景原样，1=纯黑。',
+      description: 'Milthm 背景曲绘明暗（0=原曲绘，100=全黑）。默认值取自 RPEN 原来的预览背景不透明度（60/255 ≈ 23.5% 亮 → 76% 暗）；没有明暗事件时按谱面 meta.background_dim 压暗。',
       persistent: true,
-      columns: [{ id: 'dim', name: '明暗', timelineLabel: '明暗', valueType: 'number', defaultValue: 0, min: 0, max: 1, step: 0.01, width: 120 }],
+      // defaultValue: RPEN's old preview background alpha is neutralised for Milthm charts, so its
+      // default brightness becomes the dim event's default value (76 = 1 − 60/255).
+      columns: [{ id: 'dim', name: '明暗', timelineLabel: '明暗', valueType: 'number', defaultValue: DEFAULT_DIM_PERCENT, min: 0, max: 100, step: 1, width: 120 }],
     });
   } catch (error) { api.log('注册背景明暗全局事件失败', error); }
 
@@ -289,7 +310,8 @@ export async function activate(api) {
   };
   const evaluateDim = (chart, seconds) => {
     const track = dimTrack(chart);
-    return track ? clamp01(track.value(seconds)) : 0;
+    // 0-100 percent of total darkness; without events the chart's own background_dim is the default.
+    return track ? dimFraction(chart, track.value(seconds)) : chartBackgroundDim(chart);
   };
 
   /* ---------------- preview: Milthm-style tracks ---------------- */
@@ -316,30 +338,26 @@ export async function activate(api) {
     const thickness = Math.max(2, 9 * scale * size);
     const length = 3600 * scale;
     const rgb = color.join(',');
-    context.save();
-    const gradient = context.createLinearGradient(0, 0, 0, -length);
-    gradient.addColorStop(0, `rgba(${rgb},${0.55 * bodyAlpha})`);
-    gradient.addColorStop(0.45, `rgba(${rgb},${0.26 * bodyAlpha})`);
-    gradient.addColorStop(1, `rgba(${rgb},0)`);
-    context.fillStyle = gradient;
-    roundRect(context, -thickness / 2, -length, thickness, length, thickness / 2);
-    context.fill();
-    context.globalAlpha = 0.5 * bodyAlpha;
-    context.strokeStyle = `rgba(${rgb},0.9)`;
-    context.lineWidth = Math.max(1, 1.1 * scale * size);
-    context.beginPath(); context.moveTo(0, -length); context.lineTo(0, 0); context.stroke();
     // Judgement head is sized like a note (reference: the renderer's note texture).
     // RPU prefabs: note ≈ 46.30 canvas units, line head ≈ 25.57 canvas units. The old radius 15
     // matched the line-head size (≈32 world units diameter), so a note-sized head is
     // 15 × 46.30 / 25.57 ≈ 27.2 -> use 29 (≈58 world units diameter, matching the note).
-    // v0.6.7: radius 15 -> 29, ring/dot scale proportionally, style unchanged.
+    // Draft: hollow head (transparent interior, no centre dot, thicker rim) and a solid rod that
+    // starts on the ring instead of the head centre.
     const radius = Math.max(5, 29 * scale * size);
+    const ringWidth = Math.max(1.5, radius * 0.26);
+    const rodStart = Math.max(0, radius - ringWidth / 2);
+    context.save();
+    // Solid rod: flat colour, no length gradient and no bright core line.
+    context.globalAlpha = 0.55 * bodyAlpha;
+    context.fillStyle = `rgb(${rgb})`;
+    roundRect(context, -thickness / 2, -length, thickness, length - rodStart, thickness / 2);
+    context.fill();
+    // Hollow head: interior stays transparent, only a thicker ring is drawn.
     context.globalAlpha = headAlpha;
-    context.beginPath(); context.arc(0, 0, radius, 0, Math.PI * 2);
-    context.fillStyle = `rgba(${rgb},0.18)`; context.fill();
-    context.lineWidth = Math.max(1.5, radius * 0.16); context.strokeStyle = `rgba(${rgb},0.95)`; context.stroke();
-    context.beginPath(); context.arc(0, 0, radius * 0.34, 0, Math.PI * 2);
-    context.fillStyle = `rgba(${rgb},0.92)`; context.fill();
+    context.strokeStyle = `rgba(${rgb},0.95)`;
+    context.lineWidth = ringWidth;
+    context.beginPath(); context.arc(0, 0, radius, 0, Math.PI * 2); context.stroke();
     context.restore();
   };
 
@@ -392,13 +410,98 @@ export async function activate(api) {
       if (this.images && savedDescribe !== undefined) this.images.describe = savedDescribe;
     }
   });
-  api.patch(Preview.prototype, 'drawBackground', previous => function (context, chart, tempo, seconds, ...rest) {
-    if (!isMilthmChart(chart) || settings()['preview-dim'] === false) return previous.call(this, context, chart, tempo, seconds, ...rest);
-    const dim = evaluateDim(chart, seconds);
+  // RPEN draws each line number just below the head (top baseline at +4*scale). Our Milthm track head
+  // is a hollow ring, so the number of an *unselected* line belongs in the middle of the ring; the
+  // selected line keeps RPEN's own placement (green number below the head + selection arrow).
+  const drawMilthmLineNumbers = (preview, context, scale, selectedLine) => {
+    const lineNumbers = preview.lineNumbers;
+    const lineArrows = preview.lineArrows;
+    if ((!lineNumbers && !lineArrows) || !preview.guides) return;
+    if (preview.guideChart !== preview.chart || preview.guideScale !== scale) {
+      preview.guideTextCache.clear(); preview.guideChart = preview.chart; preview.guideScale = scale;
+    }
+    const matrix = context.getTransform?.();
+    const bounded = matrix && Number.isFinite(matrix.a) && context.canvas?.width > 0 && context.canvas?.height > 0
+      && !context.shadowBlur && !context.shadowOffsetX && !context.shadowOffsetY && (!context.filter || context.filter === 'none');
+    const fontSize = 30 * scale;
+    // Fall back to one label per line if RPEN moves the guide helper module in a future version.
+    const groups = mergeGuides
+      ? mergeGuides(preview.guides, scale, preview.mergeLineNumbers)
+      : preview.guides.map(guide => ({ ...guide, indices: [guide.index] }));
+    context.save();
+    if (lineNumbers) { context.font = `${fontSize}px RPEGame, sans-serif`; context.textAlign = 'center'; }
+    for (const group of groups) {
+      const selected = group.indices.includes(selectedLine);
+      if (!lineNumbers && !(lineArrows && selected)) continue;
+      let label = null;
+      if (lineNumbers) {
+        const key = group.indices.join(','); label = preview.guideTextCache.get(key);
+        if (!label || bounded && !label.measured) {
+          const text = formatLineNumbers ? formatLineNumbers(group.indices, preview.chart.judgeLineList) : group.indices.join(', ');
+          const metrics = bounded ? context.measureText(text) : null;
+          label = { text, measured: Boolean(bounded),
+            left: -Math.max(metrics?.width / 2 || 0, metrics?.actualBoundingBoxLeft || 0) - 2,
+            right: Math.max(metrics?.width / 2 || 0, metrics?.actualBoundingBoxRight || 0) + 2,
+            top: 4 * scale - Math.max(fontSize, metrics?.actualBoundingBoxAscent || 0) - 2,
+            bottom: 4 * scale + Math.max(fontSize * 2, metrics?.actualBoundingBoxDescent || 0) + 2 };
+          if (preview.guideTextCache.size >= 2048) preview.guideTextCache.delete(preview.guideTextCache.keys().next().value);
+          preview.guideTextCache.set(key, label);
+        }
+      }
+      const angle = group.rotation * Math.PI / 180;
+      if (bounded) {
+        const arrow = lineArrows && selected ? 50 * scale : 0, left = Math.min(label?.left ?? 0, -arrow), right = Math.max(label?.right ?? 0, arrow), top = Math.min(label?.top ?? 0, -arrow), bottom = Math.max(label?.bottom ?? 0, arrow);
+        const cosine = Math.cos(angle), sine = Math.sin(angle), a = matrix.a * cosine + matrix.c * sine, b = matrix.b * cosine + matrix.d * sine,
+          c = matrix.c * cosine - matrix.a * sine, d = matrix.d * cosine - matrix.b * sine, x = matrix.a * group.x + matrix.c * group.y + matrix.e, y = matrix.b * group.x + matrix.d * group.y + matrix.f;
+        if (x + Math.max(left * a, right * a) + Math.max(top * c, bottom * c) < -1 || x + Math.min(left * a, right * a) + Math.min(top * c, bottom * c) > context.canvas.width + 1 ||
+            y + Math.max(left * b, right * b) + Math.max(top * d, bottom * d) < -1 || y + Math.min(left * b, right * b) + Math.min(top * d, bottom * d) > context.canvas.height + 1) continue;
+      }
+      context.save(); context.translate(group.x, group.y); context.rotate(angle);
+      context.fillStyle = selected ? '#00c800' : '#fff';
+      if (lineNumbers) {
+        context.textBaseline = selected ? 'top' : 'middle';
+        context.fillText(label.text, 0, selected ? 4 * scale : 0);
+      }
+      if (lineArrows && selected) {
+        const arrow = preview.skin?.images.get('Arrow2');
+        if (arrow) {
+          context.save(); context.rotate(Math.PI); context.drawImage(arrow, -25 * scale, -25 * scale, 50 * scale, 50 * scale); context.restore();
+        } else {
+          context.beginPath(); context.moveTo(0, -24 * scale); context.lineTo(-12 * scale, -8 * scale); context.lineTo(12 * scale, -8 * scale); context.closePath(); context.fill();
+        }
+      }
+      context.restore();
+    }
+    context.restore();
+  };
+  api.patch(Preview.prototype, 'drawGuides', previous => function (context, scale, selectedLine) {
+    if (this.spatialForeground || !isMilthmChart(this.chart) || settings()['preview-tracks'] === false) return previous.call(this, context, scale, selectedLine);
+    return drawMilthmLineNumbers(this, context, scale, selectedLine);
+  });
+  api.patch(Preview.prototype, 'drawBackground', previous => function (context, chart, tempo, seconds, selectedLine, frame = {}) {
+    if (!isMilthmChart(chart)) return previous.call(this, context, chart, tempo, seconds, selectedLine, frame);
+    // Milthm draws the cover artwork sharp and at full brightness, then dims it with a black overlay
+    // (RPU GameMain.cs `chartDimMask.color.a = chart.meta.background_dim`). So: drop RPEN's Gaussian
+    // blur, ignore its semi-transparent cover settings (the editor "background opacity" default is
+    // only 0.235), and composite the darkness as real black instead of the editor background.
+    const blur = this.backgroundBlur;
     const alpha = this.backgroundAlpha;
-    this.backgroundAlpha = alpha * (1 - dim);
-    try { return previous.call(this, context, chart, tempo, seconds, ...rest); }
-    finally { this.backgroundAlpha = alpha; }
+    const dim = settings()['preview-dim'] === false ? 0 : evaluateDim(chart, seconds);
+    this.backgroundBlur = 0;
+    this.backgroundAlpha = 1;
+    try {
+      const result = previous.call(this, context, chart, tempo, seconds, selectedLine, frame);
+      if (dim > 0) {
+        const viewport = frame?.viewport;
+        context.save();
+        context.globalAlpha = clamp01(dim);
+        context.fillStyle = '#000';
+        if (viewport && Number.isFinite(viewport.width) && Number.isFinite(viewport.height)) context.fillRect(viewport.left, viewport.top, viewport.width, viewport.height);
+        else context.fillRect(0, 0, context.canvas.width, context.canvas.height);
+        context.restore();
+      }
+      return result;
+    } finally { this.backgroundAlpha = alpha; this.backgroundBlur = blur; }
   });
   api.patch(SceneRuntime.prototype, 'compile', previous => function (chart, tempo) {
     if (!isMilthmChart(chart)) {
@@ -801,6 +904,9 @@ export async function activate(api) {
   const attachDimStoryboard = (chart, exported) => {
     const events = dimEvents(chart);
     if (!events.length) return null;
+    // The global event holds the *total* cover darkness, so it supersedes the chart's own
+    // meta.background_dim: export a zero base dim and put the whole 0-100 value into black.png.
+    if (exported.meta) exported.meta.background_dim = 0;
     exported.storyboards = Array.isArray(exported.storyboards) ? exported.storyboards : [];
     const index = exported.storyboards.reduce((max, storyboard) => Math.max(max, Number(storyboard.index ?? 0) + 1), 0);
     let animationIndex = exported.lines.reduce((max, line) => Math.max(max, ...(line.animations ?? []).map(animation => Number(animation.index ?? 0) + 1)), 0);
@@ -810,7 +916,7 @@ export async function activate(api) {
       const ease = rpeEaseToMil(event.easingType ?? 1);
       storyboard.animations.push({
         startTime: [...event.startTime], endTime: [...event.endTime], type: MIL_ANIM.TRANSPARENCY,
-        start: Number(event.start), end: Number(event.end), bearer_type: MIL_BEARER.STORYBOARD, bearer: index,
+        start: dimFraction(chart, event.start), end: dimFraction(chart, event.end), bearer_type: MIL_BEARER.STORYBOARD, bearer: index,
         ease: { type: ease.type, press: ease.press, isValueExp: false, cusValueExp: '', clipLeft: Number(event.easingLeft ?? 0), clipRight: Number(event.easingRight ?? 1) },
         index: animationIndex++,
       });
@@ -858,13 +964,17 @@ export async function activate(api) {
       found.push(storyboard);
     }
     if (!found.length) return;
+    // The black storyboard sits *above* the chart's own background_dim mask, so the global event
+    // (total 0-100 darkness) has to fold the base dim in: total = 1 - (1-base) * (1-storyboardAlpha).
+    const baseDim = chartBackgroundDim(chart);
+    const totalPercent = value => Math.round((1 - (1 - baseDim) * (1 - clamp01(Number(value)))) * 100);
     const events = [];
     for (const storyboard of found) {
       for (const animation of storyboard.animations) {
         if (Number(animation.type) !== MIL_ANIM.TRANSPARENCY) continue;
         events.push({
           startTime: animation.startTime, endTime: animation.endTime,
-          start: Number(animation.start), end: Number(animation.end),
+          start: totalPercent(animation.start), end: totalPercent(animation.end),
           easingType: milEaseToRpe(animation.ease), easingLeft: Number(animation.ease?.clipLeft ?? 0), easingRight: Number(animation.ease?.clipRight ?? 1),
           bezier: 0, bezierPoints: [0, 0, 1, 1], inst: 0,
         });
@@ -874,6 +984,7 @@ export async function activate(api) {
     events.sort((left, right) => beatOf(left.startTime) - beatOf(right.startTime));
     const removedKeys = new Set(found.map(storyboard => `${Number(storyboard.index ?? -1)}|${storyboard.data}`));
     const next = structuredClone(chart);
+    next['x-milthm'].dimUnit = 'percent';
     next['x-milthm'].storyboards = (next['x-milthm'].storyboards ?? []).filter(storyboard => !removedKeys.has(`${Number(storyboard.index ?? -1)}|${storyboard.data}`));
     next.META = { ...next.META, RPEVersion: Math.max(Number(next.META.RPEVersion) || 0, 240) };
     next.globalEvents = {
@@ -887,8 +998,25 @@ export async function activate(api) {
         },
       },
     };
+    if (editor.chart !== chart) return;
     editor.commit('迁移 Milthm 背景明暗为全局事件', next);
-    api.notify('已把纯黑立绘的背景明暗迁移为全局事件（可在“全局事件”时间轴编辑）', 'success');
+    api.notify('已把纯黑立绘的背景明暗迁移为全局事件（0-100，可在“全局事件”时间轴编辑）', 'success');
+  };
+  // Charts saved by the previous mod version stored the dim as 0..1 fractions on top of the chart's
+  // background_dim. Convert them once to the 0-100 total-darkness scale and stamp the unit marker.
+  const normalizedDimCharts = new WeakSet();
+  const normalizeDimScale = () => {
+    const chart = editor.chart;
+    if (!isMilthmChart(chart) || dimIsPercent(chart) || normalizedDimCharts.has(chart)) return;
+    normalizedDimCharts.add(chart);
+    const next = structuredClone(chart);
+    next['x-milthm'].dimUnit = 'percent';
+    const baseDim = chartBackgroundDim(chart);
+    const total = value => Math.round((1 - (1 - baseDim) * (1 - clamp01(Number(value)))) * 100);
+    const events = next.globalEvents?.types?.[DIM_TYPE_ID]?.columns?.dim?.events ?? [];
+    for (const event of events) { event.start = total(event.start); event.end = total(event.end); }
+    if (editor.chart !== chart) return;
+    editor.commit('Milthm 背景明暗改为 0-100', next);
   };
 
   /* ---------------- export ---------------- */
@@ -1811,7 +1939,7 @@ export async function activate(api) {
       'x-milthm': {
         kind: 'milthm-fmt2', version: 1, fmt: 2,
         meta: { background_dim: 0.6, name: '未命名 Milthm 谱面', background_artist: '', music_artist: '', charter: '', difficulty_name: '', difficulty: 0, offset: 0 },
-        importedOffsetMs: 0, storyboards: [], columns: DEFAULT_COLUMNS.slice(),
+        importedOffsetMs: 0, storyboards: [], columns: DEFAULT_COLUMNS.slice(), dimUnit: 'percent',
       },
     };
   };
@@ -1917,7 +2045,9 @@ export async function activate(api) {
     renderExCheckbox?.();
     maybeEnsureColumns().catch(() => {});
     maybeBindMedia().catch(error => api.log('Milthm 媒体绑定失败', error));
-    maybeMigrateDim().catch(error => api.log('背景明暗迁移失败', error));
+    maybeMigrateDim()
+      .then(() => normalizeDimScale())
+      .catch(error => api.log('背景明暗迁移失败', error));
     try { adaptMultiEditTypes(); } catch (error) { api.log('适配多线编辑事件类型下拉失败', error); }
   });
   api.on('editor:state', () => {
@@ -1926,7 +2056,7 @@ export async function activate(api) {
     try { adaptMultiEditTypes(); } catch (error) { api.log('适配多线编辑面板失败', error); }
     try { restrictEditableEvents(); } catch (error) { api.log('限制可编辑事件列失败', error); }
   });
-  setTimeout(() => { installColumnOverlay(); updateColumnOverlay(); renderExCheckbox?.(); maybeEnsureColumns().catch(() => {}); maybeBindMedia().catch(() => {}); }, 0);
+  setTimeout(() => { installColumnOverlay(); updateColumnOverlay(); renderExCheckbox?.(); maybeEnsureColumns().catch(() => {}); maybeBindMedia().catch(() => {}); normalizeDimScale(); }, 0);
   editor.invalidate?.();
 
   return {

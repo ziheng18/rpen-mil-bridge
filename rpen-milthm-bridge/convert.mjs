@@ -436,6 +436,8 @@ export function importMilthmChart(source, settings = {}) {
       meta: clone(meta),
       importedOffsetMs,
       storyboards: leftoverStoryboards,
+      // Background dim global events from now on use 0-100 percent (0 = original cover, 100 = black).
+      dimUnit: 'percent',
     },
   };
   return { chart, warnings };
